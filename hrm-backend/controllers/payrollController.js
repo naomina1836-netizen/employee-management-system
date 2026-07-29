@@ -55,7 +55,6 @@ exports.create = async (req, res) => {
             return res.status(400).json({ message: "Employee, month, and year are required" });
         }
 
-        // Check if payroll already exists for this month
         const [existing] = await db.query(
             "SELECT * FROM payroll WHERE employee_id = ? AND month = ? AND year = ?",
             [employee_id, month, year]
@@ -159,7 +158,6 @@ exports.generate = async (req, res) => {
             return res.status(400).json({ message: "Month and year are required" });
         }
 
-        // Get all active employees
         const [employees] = await db.query(
             `SELECT e.employee_id, p.basic_salary 
              FROM employees e
@@ -170,14 +168,12 @@ exports.generate = async (req, res) => {
         let createdCount = 0;
 
         for (const employee of employees) {
-            // Check if payroll already exists
             const [existing] = await db.query(
                 "SELECT * FROM payroll WHERE employee_id = ? AND month = ? AND year = ?",
                 [employee.employee_id, month, year]
             );
 
             if (existing.length === 0) {
-                // Calculate net salary
                 const basic_salary = employee.basic_salary || 0;
                 const allowance = basic_salary * 0.1;
                 const tax = basic_salary * 0.2;
@@ -195,7 +191,7 @@ exports.generate = async (req, res) => {
         }
 
         res.json({
-            message: `Payroll generated for ${createdCount} employees`,
+            message: "Payroll generated for " + createdCount + " employees",
             employees_processed: createdCount
         });
 

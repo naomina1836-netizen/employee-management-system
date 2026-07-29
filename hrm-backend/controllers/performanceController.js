@@ -1,4 +1,5 @@
 const db = require("../config/db");
+
 exports.getAll = async (req, res) => {
     try {
         const [reviews] = await db.query(
@@ -57,7 +58,6 @@ exports.create = async (req, res) => {
             });
         }
 
-        // Calculate overall score
         const scores = [teamwork_score, communication_score, productivity_score, punctuality_score, leadership_score];
         const validScores = scores.filter(s => s !== undefined && s !== null);
         let overall_score = 0;
@@ -108,7 +108,6 @@ exports.update = async (req, res) => {
             return res.status(404).json({ message: "Review not found" });
         }
 
-        // Calculate overall score
         const scores = [teamwork_score, communication_score, productivity_score, punctuality_score, leadership_score];
         const validScores = scores.filter(s => s !== undefined && s !== null);
         let overall_score = existing[0].overall_score;

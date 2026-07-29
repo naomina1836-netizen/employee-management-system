@@ -22,7 +22,6 @@ exports.getAll = async (req, res) => {
     }
 };
 
-// GET EMPLOYEE BY ID
 exports.getOne = async (req, res) => {
     try {
         const { id } = req.params;
@@ -196,7 +195,6 @@ exports.delete = async (req, res) => {
         res.status(500).json({ message: "Failed to delete employee" });
     }
 };
-
 
 exports.getDepartments = async (req, res) => {
     try {

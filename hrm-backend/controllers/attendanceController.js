@@ -1,4 +1,5 @@
 const db = require("../config/db");
+
 exports.getAll = async (req, res) => {
     try {
         const [attendance] = await db.query(
@@ -39,6 +40,30 @@ exports.getByEmployee = async (req, res) => {
     }
 };
 
+exports.getMonthly = async (req, res) => {
+    try {
+        const { employeeId, month, year } = req.params;
+
+        const [attendance] = await db.query(
+            `SELECT a.*, 
+                    CONCAT(e.first_name, ' ', e.last_name) as employee_name
+             FROM attendance a
+             JOIN employees e ON a.employee_id = e.employee_id
+             WHERE a.employee_id = ? 
+             AND MONTH(a.attendance_date) = ? 
+             AND YEAR(a.attendance_date) = ?
+             ORDER BY a.attendance_date`,
+            [employeeId, month, year]
+        );
+
+        res.json(attendance);
+
+    } catch (error) {
+        console.error("Error fetching monthly attendance:", error);
+        res.status(500).json({ message: "Failed to fetch monthly attendance" });
+    }
+};
+
 exports.create = async (req, res) => {
     try {
         const { employee_id, attendance_date, check_in, check_out, status } = req.body;
@@ -47,7 +72,6 @@ exports.create = async (req, res) => {
             return res.status(400).json({ message: "Employee and date are required" });
         }
 
-        // Calculate hours worked
         let hours_worked = 0;
         if (check_in && check_out) {
             const checkInTime = new Date("1970-01-01 " + check_in);
@@ -88,7 +112,6 @@ exports.update = async (req, res) => {
             return res.status(404).json({ message: "Attendance record not found" });
         }
 
-        // Calculate hours worked
         let hours_worked = existing[0].hours_worked;
         if (check_in && check_out) {
             const checkInTime = new Date("1970-01-01 " + check_in);
@@ -135,29 +158,5 @@ exports.delete = async (req, res) => {
     } catch (error) {
         console.error("Error deleting attendance:", error);
         res.status(500).json({ message: "Failed to delete attendance record" });
-    }
-};
-
-exports.getMonthly = async (req, res) => {
-    try {
-        const { employeeId, month, year } = req.params;
-
-        const [attendance] = await db.query(
-            `SELECT a.*, 
-                    CONCAT(e.first_name, ' ', e.last_name) as employee_name
-             FROM attendance a
-             JOIN employees e ON a.employee_id = e.employee_id
-             WHERE a.employee_id = ? 
-             AND MONTH(a.attendance_date) = ? 
-             AND YEAR(a.attendance_date) = ?
-             ORDER BY a.attendance_date`,
-            [employeeId, month, year]
-        );
-
-        res.json(attendance);
-
-    } catch (error) {
-        console.error("Error fetching monthly attendance:", error);
-        res.status(500).json({ message: "Failed to fetch monthly attendance" });
     }
 };

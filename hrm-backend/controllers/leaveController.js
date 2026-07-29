@@ -1,4 +1,5 @@
 const db = require("../config/db");
+
 exports.getAll = async (req, res) => {
     try {
         const [leaves] = await db.query(
@@ -21,7 +22,6 @@ exports.getAll = async (req, res) => {
     }
 };
 
-// GET LEAVE REQUESTS BY EMPLOYEE
 exports.getByEmployee = async (req, res) => {
     try {
         const { employeeId } = req.params;
@@ -54,7 +54,6 @@ exports.create = async (req, res) => {
             return res.status(400).json({ message: "Employee, leave type, start date, and end date are required" });
         }
 
-        // Calculate total days
         const start = new Date(start_date);
         const end = new Date(end_date);
         const diffTime = Math.abs(end - start);
@@ -67,7 +66,6 @@ exports.create = async (req, res) => {
             [employee_id, leave_type_id, start_date, end_date, total_days, reason || null]
         );
 
-        // Create notification for HR
         await db.query(
             `INSERT INTO notifications (user_id, title, message) 
              VALUES ((SELECT user_id FROM users WHERE employee_id = ?), 
@@ -112,12 +110,11 @@ exports.updateStatus = async (req, res) => {
             [status, approved_by || null, id]
         );
 
-        // Create notification for employee
         await db.query(
             `INSERT INTO notifications (user_id, title, message) 
              VALUES ((SELECT user_id FROM users WHERE employee_id = ?), 
                      'Leave Request Updated', 
-                     'Your leave request has been ' + ?)`,
+                     CONCAT('Your leave request has been ', ?))`,
             [existing[0].employee_id, status]
         );
 
