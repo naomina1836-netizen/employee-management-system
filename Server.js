@@ -14,19 +14,23 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Import routes
 const authRoutes = require("./routes/authRoutes");
 const employeeRoutes = require("./routes/employeeRoutes");
 const leaveRoutes = require("./routes/leaveRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
 const payrollRoutes = require("./routes/payrollRoutes");
 const performanceRoutes = require("./routes/performanceRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes"); // Added dashboard import
 
+// Use routes
 app.use("/api/auth", authRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/payroll", payrollRoutes);
 app.use("/api/performance", performanceRoutes);
+app.use("/api/dashboard", dashboardRoutes); // Added dashboard route
 
 app.get("/api/health", (req, res) => {
     res.json({ status: "OK", message: "HRM Server Running" });
@@ -42,16 +46,19 @@ app.get("/", (req, res) => {
             leaves: "/api/leaves",
             attendance: "/api/attendance",
             payroll: "/api/payroll",
-            performance: "/api/performance"
+            performance: "/api/performance",
+            dashboard: "/api/dashboard" // Added dashboard endpoint
         }
     });
 });
 
+// Error handling middleware
 app.use((err, req, res, next) => {
     console.error("Global error:", err.stack);
     res.status(500).json({ error: "Something went wrong", message: err.message });
 });
 
+// 404 handler
 app.use((req, res) => {
     res.status(404).json({ error: "Route not found", path: req.originalUrl });
 });
