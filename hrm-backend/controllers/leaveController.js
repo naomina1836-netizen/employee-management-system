@@ -138,3 +138,109 @@ exports.getLeaveTypes = async (req, res) => {
         res.status(500).json({ message: "Failed to fetch leave types" });
     }
 };
+// SEARCH LEAVE REQUESTS
+exports.search = async (req, res) => {
+    try {
+        const { keyword, status, leave_type, start_date, end_date } = req.query;
+        
+        let query = `
+            SELECT l.*, 
+                    CONCAT(e.first_name, ' ', e.last_name) as employee_name,
+                    lt.leave_name,
+                    CONCAT(a.first_name, ' ', a.last_name) as approved_by_name
+            FROM leave_requests l
+            JOIN employees e ON l.employee_id = e.employee_id
+            JOIN leave_types lt ON l.leave_type_id = lt.leave_type_id
+            LEFT JOIN employees a ON l.approved_by = a.employee_id
+            WHERE 1=1
+        `;
+        
+        const params = [];
+        
+        if (keyword) {
+            query += ` AND (e.first_name LIKE ? OR e.last_name LIKE ? OR lt.leave_name LIKE ?)`;
+            const searchTerm = `%${keyword}%`;
+            params.push(searchTerm, searchTerm, searchTerm);
+        }
+        
+        if (status) {
+            query += ` AND l.status = ?`;
+            params.push(status);
+        }
+        
+        if (leave_type) {
+            query += ` AND l.leave_type_id = ?`;
+            params.push(leave_type);
+        }
+        
+        if (start_date) {
+            query += ` AND l.start_date >= ?`;
+            params.push(start_date);
+        }
+        
+        if (end_date) {
+            query += ` AND l.end_date <= ?`;
+            params.push(end_date);
+        }
+        
+        query += ` ORDER BY l.applied_at DESC`;
+        
+        const [leaves] = await db.query(query, params);
+        res.json(leaves);
+
+    } catch (error) {
+        console.error("Error searching leave requests:", error);
+        res.status(500).json({ message: "Failed to search leave requests" });
+    }
+};
+
+// GET LEAVE STATISTICS (Report)
+exports.getStats = async (req, res) => {
+    try {
+        // By status
+        const [statusStats] = await db.query(
+            `SELECT status, COUNT(*) as count
+             FROM leave_requests
+             GROUP BY status`
+        );
+        
+        // By leave type
+        const [typeStats] = await db.query(
+            `SELECT lt.leave_name, COUNT(l.leave_id) as count
+             FROM leave_types lt
+             LEFT JOIN leave_requests l ON lt.leave_type_id = l.leave_type_id
+             GROUP BY lt.leave_type_id`
+        );
+        
+        // Monthly trend (last 6 months)
+        const [monthlyTrend] = await db.query(
+            `SELECT DATE_FORMAT(applied_at, '%Y-%m') as month, COUNT(*) as count
+             FROM leave_requests
+             WHERE applied_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+             GROUP BY DATE_FORMAT(applied_at, '%Y-%m')
+             ORDER BY month`
+        );
+        
+        // Total
+        const [total] = await db.query(
+            `SELECT COUNT(*) as total FROM leave_requests`
+        );
+        
+        // Pending
+        const [pending] = await db.query(
+            `SELECT COUNT(*) as pending FROM leave_requests WHERE status = 'Pending'`
+        );
+        
+        res.json({
+            total: total[0].total,
+            pending: pending[0].pending,
+            byStatus: statusStats,
+            byType: typeStats,
+            monthlyTrend: monthlyTrend
+        });
+
+    } catch (error) {
+        console.error("Error fetching leave stats:", error);
+        res.status(500).json({ message: "Failed to fetch leave statistics" });
+    }
+};

@@ -200,3 +200,100 @@ exports.generate = async (req, res) => {
         res.status(500).json({ message: "Failed to generate payroll" });
     }
 };
+// SEARCH PAYROLL
+exports.search = async (req, res) => {
+    try {
+        const { keyword, month, year } = req.query;
+        
+        let query = `
+            SELECT p.*, 
+                    CONCAT(e.first_name, ' ', e.last_name) as employee_name,
+                    pos.title as position_title
+            FROM payroll p
+            JOIN employees e ON p.employee_id = e.employee_id
+            JOIN positions pos ON e.position_id = pos.position_id
+            WHERE 1=1
+        `;
+        
+        const params = [];
+        
+        if (keyword) {
+            query += ` AND (e.first_name LIKE ? OR e.last_name LIKE ?)`;
+            const searchTerm = `%${keyword}%`;
+            params.push(searchTerm, searchTerm);
+        }
+        
+        if (month) {
+            query += ` AND p.month = ?`;
+            params.push(month);
+        }
+        
+        if (year) {
+            query += ` AND p.year = ?`;
+            params.push(year);
+        }
+        
+        query += ` ORDER BY p.year DESC, FIELD(p.month, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December') DESC`;
+        
+        const [payroll] = await db.query(query, params);
+        res.json(payroll);
+
+    } catch (error) {
+        console.error("Error searching payroll:", error);
+        res.status(500).json({ message: "Failed to search payroll" });
+    }
+};
+
+// GET PAYROLL STATISTICS (Report)
+exports.getStats = async (req, res) => {
+    try {
+        // Total payroll by month
+        const [monthlyTotal] = await db.query(
+            `SELECT month, year, SUM(net_salary) as total
+             FROM payroll
+             GROUP BY year, month
+             ORDER BY year DESC, FIELD(month, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December') DESC
+             LIMIT 6`
+        );
+        
+        // Average salary by department
+        const [deptAvg] = await db.query(
+            `SELECT d.department_name, AVG(p.net_salary) as average
+             FROM payroll p
+             JOIN employees e ON p.employee_id = e.employee_id
+             JOIN departments d ON e.department_id = d.department_id
+             GROUP BY d.department_id`
+        );
+        
+        // Highest paid employees (this month)
+        const [topEarners] = await db.query(
+            `SELECT CONCAT(e.first_name, ' ', e.last_name) as employee_name, 
+                    p.net_salary,
+                    p.month,
+                    p.year
+             FROM payroll p
+             JOIN employees e ON p.employee_id = e.employee_id
+             WHERE p.month = MONTHNAME(CURDATE()) AND p.year = YEAR(CURDATE())
+             ORDER BY p.net_salary DESC
+             LIMIT 5`
+        );
+        
+        // Total payroll this month
+        const [thisMonth] = await db.query(
+            `SELECT SUM(net_salary) as total
+             FROM payroll
+             WHERE month = MONTHNAME(CURDATE()) AND year = YEAR(CURDATE())`
+        );
+        
+        res.json({
+            thisMonthTotal: thisMonth[0].total || 0,
+            monthlyTotal: monthlyTotal,
+            departmentAverage: deptAvg,
+            topEarners: topEarners
+        });
+
+    } catch (error) {
+        console.error("Error fetching payroll stats:", error);
+        res.status(500).json({ message: "Failed to fetch payroll statistics" });
+    }
+};

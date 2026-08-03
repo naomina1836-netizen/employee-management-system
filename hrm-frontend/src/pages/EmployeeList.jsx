@@ -2,18 +2,32 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import SearchBar from "../components/SearchBar";
+import FilterBar from "../components/FilterBar";
 
 function EmployeeList() {
     const [employees, setEmployees] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [filters, setFilters] = useState({});
 
     useEffect(() => {
         loadEmployees();
-    }, []);
+    }, [filters]);
 
     async function loadEmployees() {
+        setLoading(true);
         try {
-            const response = await api.get("/employees");
+            let url = "/employees";
+            const params = new URLSearchParams();
+            
+            if (filters.keyword) params.append("keyword", filters.keyword);
+            if (filters.department) params.append("department", filters.department);
+            if (filters.status) params.append("status", filters.status);
+            
+            const query = params.toString();
+            if (query) url += `/search?${query}`;
+            
+            const response = await api.get(url);
             setEmployees(response.data);
         } catch (error) {
             console.error("Error loading employees:", error);
@@ -23,6 +37,45 @@ function EmployeeList() {
         }
     }
 
+    const handleSearch = (keyword) => {
+        setFilters({ ...filters, keyword });
+    };
+
+    const handleFilterChange = (name, value) => {
+        if (value) {
+            setFilters({ ...filters, [name]: value });
+        } else {
+            const newFilters = { ...filters };
+            delete newFilters[name];
+            setFilters(newFilters);
+        }
+    };
+
+    const filterOptions = [
+        {
+            name: "department",
+            label: "Department",
+            type: "select",
+            options: [
+                { value: "1", label: "IT" },
+                { value: "2", label: "HR" },
+                { value: "3", label: "Finance" },
+                { value: "4", label: "Marketing" },
+                { value: "5", label: "Operations" }
+            ]
+        },
+        {
+            name: "status",
+            label: "Status",
+            type: "select",
+            options: [
+                { value: "Active", label: "Active" },
+                { value: "Resigned", label: "Resigned" },
+                { value: "Terminated", label: "Terminated" }
+            ]
+        }
+    ];
+
     if (loading) {
         return <div className="loading-container">Loading employees...</div>;
     }
@@ -30,11 +83,14 @@ function EmployeeList() {
     return (
         <div className="page-container">
             <div className="page-header">
-                <h1>Employees</h1>
+                <h1>Employees ({employees.length})</h1>
                 <Link to="/employees/create" className="btn-primary">
                     Add Employee
                 </Link>
             </div>
+
+            <SearchBar onSearch={handleSearch} placeholder="Search by name, email, or phone..." />
+            <FilterBar filters={filterOptions} onFilterChange={handleFilterChange} />
 
             <div className="table-container">
                 <table className="data-table">

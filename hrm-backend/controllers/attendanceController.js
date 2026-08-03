@@ -160,3 +160,90 @@ exports.delete = async (req, res) => {
         res.status(500).json({ message: "Failed to delete attendance record" });
     }
 };
+// SEARCH ATTENDANCE
+exports.search = async (req, res) => {
+    try {
+        const { keyword, status, start_date, end_date } = req.query;
+        
+        let query = `
+            SELECT a.*, 
+                    CONCAT(e.first_name, ' ', e.last_name) as employee_name
+            FROM attendance a
+            JOIN employees e ON a.employee_id = e.employee_id
+            WHERE 1=1
+        `;
+        
+        const params = [];
+        
+        if (keyword) {
+            query += ` AND (e.first_name LIKE ? OR e.last_name LIKE ?)`;
+            const searchTerm = `%${keyword}%`;
+            params.push(searchTerm, searchTerm);
+        }
+        
+        if (status) {
+            query += ` AND a.status = ?`;
+            params.push(status);
+        }
+        
+        if (start_date) {
+            query += ` AND a.attendance_date >= ?`;
+            params.push(start_date);
+        }
+        
+        if (end_date) {
+            query += ` AND a.attendance_date <= ?`;
+            params.push(end_date);
+        }
+        
+        query += ` ORDER BY a.attendance_date DESC`;
+        
+        const [attendance] = await db.query(query, params);
+        res.json(attendance);
+
+    } catch (error) {
+        console.error("Error searching attendance:", error);
+        res.status(500).json({ message: "Failed to search attendance" });
+    }
+};
+
+// GET ATTENDANCE STATISTICS (Report)
+exports.getStats = async (req, res) => {
+    try {
+        // By status (this month)
+        const [monthlyStats] = await db.query(
+            `SELECT status, COUNT(*) as count
+             FROM attendance
+             WHERE MONTH(attendance_date) = MONTH(CURDATE()) AND YEAR(attendance_date) = YEAR(CURDATE())
+             GROUP BY status`
+        );
+        
+        // Daily trend (last 7 days)
+        const [dailyTrend] = await db.query(
+            `SELECT attendance_date, 
+                    SUM(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) as present,
+                    SUM(CASE WHEN status = 'Absent' THEN 1 ELSE 0 END) as absent,
+                    SUM(CASE WHEN status = 'Late' THEN 1 ELSE 0 END) as late
+             FROM attendance
+             WHERE attendance_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+             GROUP BY attendance_date
+             ORDER BY attendance_date`
+        );
+        
+        // Total this month
+        const [total] = await db.query(
+            `SELECT COUNT(*) as total FROM attendance
+             WHERE MONTH(attendance_date) = MONTH(CURDATE()) AND YEAR(attendance_date) = YEAR(CURDATE())`
+        );
+        
+        res.json({
+            totalThisMonth: total[0].total,
+            monthlyStats: monthlyStats,
+            dailyTrend: dailyTrend
+        });
+
+    } catch (error) {
+        console.error("Error fetching attendance stats:", error);
+        res.status(500).json({ message: "Failed to fetch attendance statistics" });
+    }
+};

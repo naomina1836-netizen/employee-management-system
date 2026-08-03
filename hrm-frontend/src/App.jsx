@@ -8,6 +8,7 @@ import LeaveList from "./pages/LeaveList";
 import AttendanceList from "./pages/AttendanceList";
 import PayrollList from "./pages/PayrollList";
 import PerformanceList from "./pages/PerformanceList";
+import Reports from "./pages/Reports";
 
 function App() {
     const { user, loading } = useAuth();
@@ -30,6 +31,7 @@ function App() {
                 <Route path="attendance" element={<AttendanceList />} />
                 <Route path="payroll" element={<PayrollList />} />
                 <Route path="performance" element={<PerformanceList />} />
+                <Route path="reports" element={<Reports />} />
             </Route>
         </Routes>
     );

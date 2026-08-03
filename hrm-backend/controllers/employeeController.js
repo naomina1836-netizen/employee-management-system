@@ -224,3 +224,102 @@ exports.getPositions = async (req, res) => {
         res.status(500).json({ message: "Failed to fetch positions" });
     }
 };
+// SEARCH EMPLOYEES
+exports.search = async (req, res) => {
+    try {
+        const { keyword, department, status } = req.query;
+        
+        let query = `
+            SELECT e.*, 
+                    d.department_name,
+                    p.title as position_title,
+                    CONCAT(m.first_name, ' ', m.last_name) as manager_name
+            FROM employees e
+            LEFT JOIN departments d ON e.department_id = d.department_id
+            LEFT JOIN positions p ON e.position_id = p.position_id
+            LEFT JOIN employees m ON e.manager_id = m.employee_id
+            WHERE 1=1
+        `;
+        
+        const params = [];
+        
+        if (keyword) {
+            query += ` AND (e.first_name LIKE ? OR e.last_name LIKE ? OR e.email LIKE ? OR e.phone LIKE ?)`;
+            const searchTerm = `%${keyword}%`;
+            params.push(searchTerm, searchTerm, searchTerm, searchTerm);
+        }
+        
+        if (department) {
+            query += ` AND e.department_id = ?`;
+            params.push(department);
+        }
+        
+        if (status) {
+            query += ` AND e.employment_status = ?`;
+            params.push(status);
+        }
+        
+        query += ` ORDER BY e.employee_id DESC`;
+        
+        const [employees] = await db.query(query, params);
+        res.json(employees);
+
+    } catch (error) {
+        console.error("Error searching employees:", error);
+        res.status(500).json({ message: "Failed to search employees" });
+    }
+};
+
+// GET EMPLOYEE STATISTICS (Report)
+exports.getStats = async (req, res) => {
+    try {
+        // Total by department
+        const [deptStats] = await db.query(
+            `SELECT d.department_name, COUNT(e.employee_id) as count
+             FROM departments d
+             LEFT JOIN employees e ON d.department_id = e.department_id AND e.employment_status = 'Active'
+             GROUP BY d.department_id`
+        );
+        
+        // Total by status
+        const [statusStats] = await db.query(
+            `SELECT employment_status, COUNT(*) as count
+             FROM employees
+             GROUP BY employment_status`
+        );
+        
+        // Total by gender
+        const [genderStats] = await db.query(
+            `SELECT gender, COUNT(*) as count
+             FROM employees
+             GROUP BY gender`
+        );
+        
+        // Total employees
+        const [total] = await db.query(
+            `SELECT COUNT(*) as total FROM employees`
+        );
+        
+        // Recent hires (last 30 days)
+        const [recentHires] = await db.query(
+            `SELECT e.*, d.department_name, p.title as position_title
+             FROM employees e
+             LEFT JOIN departments d ON e.department_id = d.department_id
+             LEFT JOIN positions p ON e.position_id = p.position_id
+             WHERE e.hire_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+             ORDER BY e.hire_date DESC`
+        );
+        
+        res.json({
+            total: total[0].total,
+            byDepartment: deptStats,
+            byStatus: statusStats,
+            byGender: genderStats,
+            recentHires: recentHires
+        });
+
+    } catch (error) {
+        console.error("Error fetching employee stats:", error);
+        res.status(500).json({ message: "Failed to fetch employee statistics" });
+    }
+};

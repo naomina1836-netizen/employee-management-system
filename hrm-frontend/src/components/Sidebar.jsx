@@ -10,17 +10,16 @@ function Sidebar() {
         navigate("/login");
     };
 
-    // Define navigation items based on role
     const navItems = [
         { path: "/dashboard", label: "Dashboard", icon: "📊" },
         { path: "/employees", label: "Employees", icon: "👥" },
         { path: "/leaves", label: "Leave Requests", icon: "📋" },
         { path: "/attendance", label: "Attendance", icon: "✅" },
         { path: "/payroll", label: "Payroll", icon: "💰" },
-        { path: "/performance", label: "Performance", icon: "⭐" }
+        { path: "/performance", label: "Performance", icon: "⭐" },
+        { path: "/reports", label: "Reports", icon: "📈" }
     ];
 
-    // Role-based filtering
     const filteredNav = navItems.filter(item => {
         if (user?.role === 'Employee') {
             return ['/dashboard', '/leaves', '/attendance', '/payroll', '/performance'].includes(item.path);
