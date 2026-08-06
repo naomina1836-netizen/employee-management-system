@@ -25,21 +25,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
                             color: "#fff",
                             borderRadius: "8px",
                             padding: "16px",
-                        },
-                        success: {
-                            duration: 3000,
-                            iconTheme: {
-                                primary: "#4ade80",
-                                secondary: "#fff",
-                            },
-                        },
-                        error: {
-                            duration: 4000,
-                            iconTheme: {
-                                primary: "#ef4444",
-                                secondary: "#fff",
-                            },
-                        },
+                        }
                     }}
                 />
             </AuthProvider>

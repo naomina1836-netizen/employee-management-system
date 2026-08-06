@@ -20,8 +20,14 @@ export function AuthProvider({ children }) {
         const storedUser = localStorage.getItem("user");
         
         if (token && storedUser) {
-            setUser(JSON.parse(storedUser));
-            api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+            try {
+                setUser(JSON.parse(storedUser));
+                api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+            } catch (e) {
+                console.error("Error parsing stored user:", e);
+                localStorage.removeItem("user");
+                localStorage.removeItem("token");
+            }
         }
         setLoading(false);
     }, []);

@@ -4,8 +4,8 @@ import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 
 function Login() {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+    const [email, setEmail] = useState("admin@hrm.com");
+    const [password, setPassword] = useState("password123");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const { login } = useAuth();
@@ -21,6 +21,7 @@ function Login() {
             toast.success("Welcome to HRM!");
             navigate("/dashboard");
         } catch (err) {
+            console.error("Login error:", err);
             const message = err.response?.data?.message || "Login failed. Please try again.";
             setError(message);
             toast.error(message);
@@ -32,8 +33,10 @@ function Login() {
     return (
         <div className="login-page">
             <div className="login-card">
-                <h1>HRM</h1>
-                <p className="subtitle">Human Resource Management System</p>
+                <div className="login-logo">
+                    <h1>⚡ HRM</h1>
+                    <p>Human Resource Management System</p>
+                </div>
 
                 {error && <div className="login-error">{error}</div>}
 
@@ -64,6 +67,10 @@ function Login() {
                         {loading ? "Logging in..." : "Login"}
                     </button>
                 </form>
+
+                <div className="login-footer">
+                    <small>Default: admin@hrm.com / password123</small>
+                </div>
             </div>
         </div>
     );
