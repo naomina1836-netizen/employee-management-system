@@ -2,18 +2,29 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import SearchBar from "../components/SearchBar";
 
 function LeaveList() {
     const [leaves, setLeaves] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [filters, setFilters] = useState({});
 
     useEffect(() => {
         loadLeaves();
-    }, []);
+    }, [filters]);
 
     async function loadLeaves() {
+        setLoading(true);
         try {
-            const response = await api.get("/leaves");
+            let url = "/leaves";
+            const params = new URLSearchParams();
+            if (filters.keyword) params.append("keyword", filters.keyword);
+            if (filters.status) params.append("status", filters.status);
+            
+            const query = params.toString();
+            if (query) url += `/search?${query}`;
+            
+            const response = await api.get(url);
             setLeaves(response.data);
         } catch (error) {
             console.error("Error loading leaves:", error);
@@ -23,6 +34,27 @@ function LeaveList() {
         }
     }
 
+    const handleSearch = (keyword) => {
+        setFilters({ ...filters, keyword });
+    };
+
+    const handleStatusFilter = (e) => {
+        setFilters({ ...filters, status: e.target.value });
+    };
+
+    const updateStatus = async (id, status) => {
+        if (!window.confirm(`Are you sure you want to ${status} this leave request?`)) return;
+
+        try {
+            await api.patch(`/leaves/${id}/status`, { status });
+            toast.success(`Leave request ${status.toLowerCase()} successfully!`);
+            loadLeaves();
+        } catch (error) {
+            console.error("Error updating leave status:", error);
+            toast.error("Failed to update leave status");
+        }
+    };
+
     if (loading) {
         return <div className="loading-container">Loading leave requests...</div>;
     }
@@ -30,10 +62,22 @@ function LeaveList() {
     return (
         <div className="page-container">
             <div className="page-header">
-                <h1>Leave Requests</h1>
+                <h1>Leave Requests ({leaves.length})</h1>
                 <Link to="/leaves/create" className="btn-primary">
                     Request Leave
                 </Link>
+            </div>
+
+            <div className="filter-section">
+                <SearchBar onSearch={handleSearch} placeholder="Search by employee name..." />
+                <div className="filter-group">
+                    <select onChange={handleStatusFilter} defaultValue="">
+                        <option value="">All Status</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Rejected">Rejected</option>
+                    </select>
+                </div>
             </div>
 
             <div className="table-container">
@@ -70,9 +114,21 @@ function LeaveList() {
                                         </span>
                                     </td>
                                     <td>
-                                        <Link to={`/leaves/${leave.leave_id}`} className="btn-sm">View</Link>
                                         {leave.status === 'Pending' && (
-                                            <Link to={`/leaves/approve/${leave.leave_id}`} className="btn-sm btn-approve">Approve</Link>
+                                            <>
+                                                <button 
+                                                    onClick={() => updateStatus(leave.leave_id, 'Approved')}
+                                                    className="btn-sm btn-approve"
+                                                >
+                                                    Approve
+                                                </button>
+                                                <button 
+                                                    onClick={() => updateStatus(leave.leave_id, 'Rejected')}
+                                                    className="btn-sm btn-danger"
+                                                >
+                                                    Reject
+                                                </button>
+                                            </>
                                         )}
                                     </td>
                                 </tr>
