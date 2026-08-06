@@ -1022,3 +1022,16 @@ body {
 .login-footer small {
     color: #999;
 }
+.register-link {
+    color: #d4af37;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.register-link:hover {
+    text-decoration: underline;
+}
+
+.login-footer p {
+    margin-bottom: 10px;
+}

@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import EmployeeList from "./pages/EmployeeList";
 import CreateEmployee from "./pages/CreateEmployee";
@@ -24,7 +25,13 @@ function App() {
     }
 
     if (!user) {
-        return <Login />;
+        return (
+            <Routes>
+                <Route path="/" element={<Navigate to="/login" />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+            </Routes>
+        );
     }
 
     return (
@@ -32,29 +39,17 @@ function App() {
             <Route path="/" element={<Layout />}>
                 <Route index element={<Navigate to="/dashboard" />} />
                 <Route path="dashboard" element={<Dashboard />} />
-                
-                {/* Employee Routes */}
                 <Route path="employees" element={<EmployeeList />} />
                 <Route path="employees/create" element={<CreateEmployee />} />
                 <Route path="employees/edit/:id" element={<EditEmployee />} />
-                
-                {/* Leave Routes */}
                 <Route path="leaves" element={<LeaveList />} />
                 <Route path="leaves/create" element={<CreateLeave />} />
-                
-                {/* Attendance Routes */}
                 <Route path="attendance" element={<AttendanceList />} />
                 <Route path="attendance/create" element={<CreateAttendance />} />
-                
-                {/* Payroll Routes */}
                 <Route path="payroll" element={<PayrollList />} />
                 <Route path="payroll/create" element={<CreatePayroll />} />
-                
-                {/* Performance Routes */}
                 <Route path="performance" element={<PerformanceList />} />
                 <Route path="performance/create" element={<CreatePerformance />} />
-                
-                {/* Reports */}
                 <Route path="reports" element={<Reports />} />
             </Route>
         </Routes>
