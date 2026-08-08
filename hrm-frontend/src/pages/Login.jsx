@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 
@@ -69,9 +69,6 @@ function Login() {
                 </form>
 
                 <div className="login-footer">
-                    <p>
-                        Don't have an account? <Link to="/register" className="register-link">Register here</Link>
-                    </p>
                     <small>Default: admin@hrm.com / password123</small>
                 </div>
             </div>

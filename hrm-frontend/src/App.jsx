@@ -4,6 +4,7 @@ import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
 import EmployeeList from "./pages/EmployeeList";
 import CreateEmployee from "./pages/CreateEmployee";
 import EditEmployee from "./pages/EditEmployee";
@@ -39,6 +40,7 @@ function App() {
             <Route path="/" element={<Layout />}>
                 <Route index element={<Navigate to="/dashboard" />} />
                 <Route path="dashboard" element={<Dashboard />} />
+                <Route path="profile" element={<Profile />} />
                 <Route path="employees" element={<EmployeeList />} />
                 <Route path="employees/create" element={<CreateEmployee />} />
                 <Route path="employees/edit/:id" element={<EditEmployee />} />

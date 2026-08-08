@@ -1035,3 +1035,78 @@ body {
 .login-footer p {
     margin-bottom: 10px;
 }
+/* Profile Page */
+.profile-container {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.profile-card {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin-bottom: 30px;
+}
+
+.profile-field {
+    display: flex;
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.profile-field:last-child {
+    border-bottom: none;
+}
+
+.profile-field label {
+    width: 150px;
+    font-weight: 600;
+    color: #666;
+}
+
+.profile-field p {
+    flex: 1;
+    color: #333;
+}
+
+.password-section {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.password-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.password-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.password-form .form-group label {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.password-form .form-group input {
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.password-form .form-group input:focus {
+    outline: none;
+    border-color: #d4af37;
+}
+
+.password-form .btn-primary {
+    align-self: flex-start;
+    padding: 10px 30px;
+}

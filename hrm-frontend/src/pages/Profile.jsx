@@ -7,6 +7,11 @@ function Profile() {
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(false);
     const [formData, setFormData] = useState({});
+    const [passwordData, setPasswordData] = useState({
+        current_password: "",
+        new_password: "",
+        confirm_password: ""
+    });
 
     useEffect(() => {
         loadProfile();
@@ -32,7 +37,14 @@ function Profile() {
         });
     };
 
-    const handleSubmit = async (e) => {
+    const handlePasswordChange = (e) => {
+        setPasswordData({
+            ...passwordData,
+            [e.target.name]: e.target.value
+        });
+    };
+
+    const handleUpdateProfile = async (e) => {
         e.preventDefault();
         try {
             await api.put("/users/me", formData);
@@ -41,7 +53,37 @@ function Profile() {
             setEditing(false);
         } catch (error) {
             console.error("Error updating profile:", error);
-            toast.error("Failed to update profile");
+            toast.error(error.response?.data?.message || "Failed to update profile");
+        }
+    };
+
+    const handleChangePassword = async (e) => {
+        e.preventDefault();
+        
+        if (passwordData.new_password !== passwordData.confirm_password) {
+            toast.error("New passwords do not match");
+            return;
+        }
+
+        if (passwordData.new_password.length < 6) {
+            toast.error("Password must be at least 6 characters");
+            return;
+        }
+
+        try {
+            await api.post("/auth/change-password", {
+                current_password: passwordData.current_password,
+                new_password: passwordData.new_password
+            });
+            toast.success("Password changed successfully!");
+            setPasswordData({
+                current_password: "",
+                new_password: "",
+                confirm_password: ""
+            });
+        } catch (error) {
+            console.error("Error changing password:", error);
+            toast.error(error.response?.data?.message || "Failed to change password");
         }
     };
 
@@ -66,7 +108,7 @@ function Profile() {
 
             <div className="profile-container">
                 {editing ? (
-                    <form onSubmit={handleSubmit} className="form-grid">
+                    <form onSubmit={handleUpdateProfile} className="form-grid">
                         <div className="form-group">
                             <label>Username</label>
                             <input
@@ -137,12 +179,47 @@ function Profile() {
                             <label>Status</label>
                             <p>{profile.status || "Active"}</p>
                         </div>
-                        <div className="profile-field">
-                            <label>Joined</label>
-                            <p>{new Date(profile.created_at).toLocaleDateString()}</p>
-                        </div>
                     </div>
                 )}
+
+                {/* Change Password Section */}
+                <div className="profile-section password-section">
+                    <h2>Change Password</h2>
+                    <form onSubmit={handleChangePassword} className="password-form">
+                        <div className="form-group">
+                            <label>Current Password</label>
+                            <input
+                                type="password"
+                                name="current_password"
+                                value={passwordData.current_password}
+                                onChange={handlePasswordChange}
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>New Password</label>
+                            <input
+                                type="password"
+                                name="new_password"
+                                value={passwordData.new_password}
+                                onChange={handlePasswordChange}
+                                required
+                                minLength="6"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>Confirm New Password</label>
+                            <input
+                                type="password"
+                                name="confirm_password"
+                                value={passwordData.confirm_password}
+                                onChange={handlePasswordChange}
+                                required
+                            />
+                        </div>
+                        <button type="submit" className="btn-primary">Change Password</button>
+                    </form>
+                </div>
             </div>
         </div>
     );
