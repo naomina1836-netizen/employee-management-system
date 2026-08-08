@@ -93,7 +93,7 @@ function AttendanceSelf() {
                         </button>
                     )}
                     {todayAttendance?.check_in && todayAttendance?.check_out && (
-                        <p className="completed-message">✅ Attendance completed for today</p>
+                        <p className="completed-message">Attendance completed for today</p>
                     )}
                 </div>
             </div>
