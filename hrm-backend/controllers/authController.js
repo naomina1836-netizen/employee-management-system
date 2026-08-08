@@ -2,15 +2,8 @@ const db = require("../config/db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-// ===========================
-// PUBLIC ROUTES
-// ===========================
-
 exports.login = async (req, res) => {
     try {
-        console.log("=== LOGIN USER ===");
-        console.log("Email received:", req.body.email);
-
         const { email, password } = req.body;
 
         if (!email || !password) {
@@ -23,22 +16,18 @@ exports.login = async (req, res) => {
         );
 
         if (users.length === 0) {
-            console.log("User not found:", email);
             return res.status(401).json({ message: "Invalid email or password" });
         }
 
         const user = users[0];
-        console.log("User found:", user.email);
 
         if (user.status === "Inactive") {
-            return res.status(401).json({ message: "Your account is inactive. Please contact HR." });
+            return res.status(401).json({ message: "Your account is inactive" });
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
-        console.log("Password valid:", isPasswordValid);
 
         if (!isPasswordValid) {
-            console.log("Invalid password for:", email);
             return res.status(401).json({ message: "Invalid email or password" });
         }
 
@@ -67,10 +56,6 @@ exports.login = async (req, res) => {
         res.status(500).json({ message: "Failed to login" });
     }
 };
-
-// ===========================
-// PROTECTED ROUTES
-// ===========================
 
 exports.me = async (req, res) => {
     try {
@@ -115,8 +100,8 @@ exports.changePassword = async (req, res) => {
         }
 
         const user = users[0];
-
         const isPasswordValid = await bcrypt.compare(current_password, user.password);
+
         if (!isPasswordValid) {
             return res.status(401).json({ message: "Current password is incorrect" });
         }
@@ -128,12 +113,6 @@ exports.changePassword = async (req, res) => {
             [hashedPassword, userId]
         );
 
-        await db.query(
-            `INSERT INTO audit_logs (user_id, action, table_name, record_id) 
-             VALUES (?, 'CHANGE_PASSWORD', 'users', ?)`,
-            [req.user.user_id, userId]
-        );
-
         res.json({ message: "Password changed successfully" });
 
     } catch (error) {
@@ -142,18 +121,9 @@ exports.changePassword = async (req, res) => {
     }
 };
 
-// ===========================
-// ADMIN ONLY ROUTES
-// ===========================
-
 exports.register = async (req, res) => {
     try {
-        // Only Admin and HR can create users
-        if (!req.user) {
-            return res.status(401).json({ message: "Unauthorized" });
-        }
-        
-        if (!['Admin', 'HR'].includes(req.user.role)) {
+        if (!req.user || !['Admin', 'HR'].includes(req.user.role)) {
             return res.status(403).json({ message: "Only Admin and HR can create users" });
         }
 
@@ -180,12 +150,6 @@ exports.register = async (req, res) => {
             [username, email, hashedPassword, role || "Employee", employee_id || null]
         );
 
-        await db.query(
-            `INSERT INTO audit_logs (user_id, action, table_name, record_id) 
-             VALUES (?, 'CREATE_USER', 'users', ?)`,
-            [req.user.user_id, result.insertId]
-        );
-
         res.status(201).json({
             message: "User created successfully",
             user_id: result.insertId
@@ -199,11 +163,11 @@ exports.register = async (req, res) => {
 
 exports.resetPassword = async (req, res) => {
     try {
-        const { user_id, new_password } = req.body;
-
         if (req.user.role !== 'Admin') {
             return res.status(403).json({ message: "Only Admin can reset passwords" });
         }
+
+        const { user_id, new_password } = req.body;
 
         if (!user_id || !new_password) {
             return res.status(400).json({ message: "User ID and new password are required" });
@@ -213,26 +177,11 @@ exports.resetPassword = async (req, res) => {
             return res.status(400).json({ message: "New password must be at least 6 characters" });
         }
 
-        const [users] = await db.query(
-            "SELECT * FROM users WHERE user_id = ?",
-            [user_id]
-        );
-
-        if (users.length === 0) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
         const hashedPassword = await bcrypt.hash(new_password, 10);
 
         await db.query(
             "UPDATE users SET password = ? WHERE user_id = ?",
             [hashedPassword, user_id]
-        );
-
-        await db.query(
-            `INSERT INTO audit_logs (user_id, action, table_name, record_id) 
-             VALUES (?, 'RESET_PASSWORD', 'users', ?)`,
-            [req.user.user_id, user_id]
         );
 
         res.json({ message: "Password reset successfully" });
