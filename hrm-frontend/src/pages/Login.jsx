@@ -8,7 +8,6 @@ function Login() {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
 
@@ -17,7 +16,6 @@ function Login() {
         setError("");
         setLoading(true);
 
-        // Basic validation
         if (!email || !password) {
             setError("Please enter both email and password");
             setLoading(false);
@@ -29,7 +27,6 @@ function Login() {
             toast.success("Welcome back!");
             navigate("/dashboard");
         } catch (err) {
-            console.error("Login error:", err);
             const message = err.response?.data?.message || "Invalid credentials. Please try again.";
             setError(message);
             toast.error(message);
@@ -41,7 +38,6 @@ function Login() {
     return (
         <div className="login-page">
             <div className="login-container">
-                {/* Left Side - Branding */}
                 <div className="login-brand">
                     <div className="brand-content">
                         <div className="brand-logo">
@@ -75,7 +71,6 @@ function Login() {
                     </div>
                 </div>
 
-                {/* Right Side - Login Form */}
                 <div className="login-form-container">
                     <div className="login-form-wrapper">
                         <div className="form-header">
@@ -92,52 +87,35 @@ function Login() {
 
                         <form onSubmit={handleSubmit} className="login-form">
                             <div className="form-group">
-                                <label htmlFor="email">Email Address</label>
+                                <label>Email Address</label>
                                 <div className="input-wrapper">
                                     <span className="input-icon">📧</span>
                                     <input
                                         type="email"
-                                        id="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder="Enter your email address"
                                         required
-                                        autoFocus
                                     />
                                 </div>
                             </div>
 
                             <div className="form-group">
-                                <label htmlFor="password">Password</label>
+                                <label>Password</label>
                                 <div className="input-wrapper">
                                     <span className="input-icon">🔒</span>
                                     <input
-                                        type={showPassword ? "text" : "password"}
-                                        id="password"
+                                        type="password"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         placeholder="Enter your password"
                                         required
                                     />
-                                    <button
-                                        type="button"
-                                        className="password-toggle"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                    >
-                                        {showPassword ? "🙈" : "👁️"}
-                                    </button>
                                 </div>
                             </div>
 
                             <button type="submit" className="login-submit" disabled={loading}>
-                                {loading ? (
-                                    <>
-                                        <span className="spinner"></span>
-                                        Signing in...
-                                    </>
-                                ) : (
-                                    "Sign In"
-                                )}
+                                {loading ? "Signing in..." : "Sign In"}
                             </button>
                         </form>
 

@@ -7,8 +7,8 @@ const authenticate = require("../middleware/authMiddleware");
 router.post("/login", authController.login);
 
 // Protected routes
-router.post("/change-password", authenticate, authController.changePassword);
 router.get("/me", authenticate, authController.me);
+router.post("/change-password", authenticate, authController.changePassword);
 
 // Admin only routes
 router.post("/register", authenticate, authController.register);

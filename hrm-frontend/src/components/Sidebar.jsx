@@ -1,9 +1,8 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 function Sidebar() {
     const { user, logout } = useAuth();
-    const navigate = useNavigate();
 
     const handleLogout = () => {
         if (window.confirm("Are you sure you want to logout?")) {
@@ -33,7 +32,7 @@ function Sidebar() {
         <div className="sidebar">
             <div className="sidebar-header">
                 <h2>⚡ HRM</h2>
-                <span className={`user-role ${user?.role?.toLowerCase()}`}>{user?.role}</span>
+                <span className="user-role">{user?.role}</span>
             </div>
 
             <nav className="sidebar-nav">
