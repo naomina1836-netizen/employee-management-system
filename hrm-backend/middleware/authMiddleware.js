@@ -21,34 +21,4 @@ const authenticate = (req, res, next) => {
     }
 };
 
-// Check if user owns the resource or has admin/HR role
-const checkOwnership = (req, res, next) => {
-    const userId = parseInt(req.params.id) || parseInt(req.params.employeeId);
-    const currentUserId = req.user.user_id;
-    const currentRole = req.user.role;
-
-    // Admin and HR can access everything
-    if (currentRole === 'Admin' || currentRole === 'HR') {
-        return next();
-    }
-
-    // Managers can access their direct reports
-    if (currentRole === 'Manager') {
-        req.isManager = true;
-        return next();
-    }
-
-    // Employees can only access their own data
-    if (currentRole === 'Employee') {
-        if (userId && userId !== currentUserId) {
-            return res.status(403).json({ 
-                message: "Access denied. You can only view your own data." 
-            });
-        }
-        return next();
-    }
-
-    return res.status(403).json({ message: "Access denied" });
-};
-
-module.exports = { authenticate, checkOwnership };
+module.exports = authenticate;
