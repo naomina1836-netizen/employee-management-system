@@ -15,6 +15,8 @@ function Reports() {
     }, []);
 
     async function loadReports() {
+        setLoading(true);
+
         try {
             setError("");
 
@@ -30,14 +32,14 @@ function Reports() {
             if (employees.status === "fulfilled") {
                 setEmployeeStats(employees.value.data);
             } else {
-                failedRequests.push("employee");
+                failedRequests.push("employees");
                 console.error("Error loading employee stats:", employees.reason);
             }
 
             if (leaves.status === "fulfilled") {
                 setLeaveStats(leaves.value.data);
             } else {
-                failedRequests.push("leave");
+                failedRequests.push("leaves");
                 console.error("Error loading leave stats:", leaves.reason);
             }
 
@@ -88,8 +90,15 @@ function Reports() {
     };
 
     const employeeTotal = employeeStats?.total || 0;
+    const recentHiresCount = employeeStats?.recentHires?.length || 0;
+    const departmentCount = employeeStats?.byDepartment?.length || 0;
     const leaveTotal = leaveStats?.total || 0;
+    const pendingLeaves = leaveStats?.pending || 0;
+    const approvedLeaves =
+        leaveStats?.byStatus?.find((item) => item.status === "Approved")?.count || 0;
     const payrollThisMonth = payrollStats?.thisMonthTotal || 0;
+    const topEarners = payrollStats?.topEarners || [];
+    const totalReviews = performanceStats?.totalReviews || 0;
     const averageScore = performanceStats?.averageScores?.avg_overall || 0;
 
     if (loading) {
@@ -115,22 +124,22 @@ function Reports() {
                 <div className="report-summary-card">
                     <span className="summary-label">Employees</span>
                     <strong>{formatNumber(employeeTotal)}</strong>
-                    <p>{employeeStats?.byDepartment?.length || 0} departments represented</p>
+                    <p>{departmentCount} departments, {recentHiresCount} recent hires</p>
                 </div>
                 <div className="report-summary-card">
                     <span className="summary-label">Leave requests</span>
                     <strong>{formatNumber(leaveTotal)}</strong>
-                    <p>{leaveStats?.pending || 0} pending approvals</p>
+                    <p>{pendingLeaves} pending, {approvedLeaves} approved</p>
                 </div>
                 <div className="report-summary-card">
                     <span className="summary-label">Payroll this month</span>
                     <strong>ETB {formatNumber(payrollThisMonth)}</strong>
-                    <p>{payrollStats?.topEarners?.length || 0} top earners highlighted</p>
+                    <p>{topEarners.length} top earners highlighted</p>
                 </div>
                 <div className="report-summary-card">
                     <span className="summary-label">Average score</span>
                     <strong>{formatScore(averageScore)}</strong>
-                    <p>Across the current performance reviews</p>
+                    <p>Across {formatNumber(totalReviews)} performance reviews</p>
                 </div>
             </div>
 
@@ -138,7 +147,7 @@ function Reports() {
                 <section className="report-section">
                     <div className="report-section-header">
                         <h2>Employee Statistics</h2>
-                        <span>{employeeStats?.byDepartment?.length || 0} departments</span>
+                        <span>{recentHiresCount} recent hires</span>
                     </div>
                     <div className="stats-grid report-stats-grid">
                         <div className="stat-card stat-card-compact">
@@ -147,7 +156,7 @@ function Reports() {
                         </div>
                         <div className="stat-card stat-card-compact">
                             <h3>Departments</h3>
-                            <p className="stat-number">{employeeStats?.byDepartment?.length || 0}</p>
+                            <p className="stat-number">{departmentCount}</p>
                         </div>
                     </div>
                     <div className="report-chart">
@@ -174,6 +183,12 @@ function Reports() {
                             })}
                         </div>
                     </div>
+                    <div className="status-breakdown">
+                        <div className="status-item">
+                            <span className="status-badge approved">Recent hires</span>
+                            <span>{recentHiresCount}</span>
+                        </div>
+                    </div>
                 </section>
 
                 <section className="report-section">
@@ -188,7 +203,13 @@ function Reports() {
                         </div>
                         <div className="stat-card stat-card-compact">
                             <h3>Pending</h3>
-                            <p className="stat-number pending">{formatNumber(leaveStats?.pending || 0)}</p>
+                            <p className="stat-number pending">{formatNumber(pendingLeaves)}</p>
+                        </div>
+                        <div className="stat-card stat-card-compact">
+                            <h3>Approved</h3>
+                            <p className="stat-number" style={{ color: "#16a34a" }}>
+                                {formatNumber(approvedLeaves)}
+                            </p>
                         </div>
                     </div>
                     <div className="status-breakdown">
@@ -206,22 +227,25 @@ function Reports() {
                 <section className="report-section">
                     <div className="report-section-header">
                         <h2>Payroll Statistics</h2>
-                        <span>{payrollStats?.topEarners?.length || 0} top earners</span>
+                        <span>{topEarners.length} top earners</span>
                     </div>
                     <div className="stats-grid report-stats-grid">
                         <div className="stat-card stat-card-compact">
-                            <h3>This Month</h3>
+                            <h3>This Month Total</h3>
                             <p className="stat-number">ETB {formatNumber(payrollThisMonth)}</p>
                         </div>
                         <div className="stat-card stat-card-compact">
                             <h3>Top Earners</h3>
                             <div className="mini-list">
-                                {(payrollStats?.topEarners || []).length === 0 ? (
+                                {topEarners.length === 0 ? (
                                     <p className="muted-copy">No payroll data yet</p>
                                 ) : (
-                                    payrollStats.topEarners.map((earner, index) => (
+                                    topEarners.slice(0, 3).map((earner, index) => (
                                         <p key={`${earner.employee_name}-${index}`}>
                                             {index + 1}. {earner.employee_name}
+                                            {earner.net_salary !== undefined && earner.net_salary !== null
+                                                ? `: ETB ${formatNumber(earner.net_salary)}`
+                                                : ""}
                                         </p>
                                     ))
                                 )}
@@ -233,12 +257,12 @@ function Reports() {
                 <section className="report-section">
                     <div className="report-section-header">
                         <h2>Performance Statistics</h2>
-                        <span>{performanceStats?.totalReviews || 0} reviews</span>
+                        <span>{formatNumber(totalReviews)} reviews</span>
                     </div>
                     <div className="stats-grid report-stats-grid">
                         <div className="stat-card stat-card-compact">
                             <h3>Total Reviews</h3>
-                            <p className="stat-number">{formatNumber(performanceStats?.totalReviews || 0)}</p>
+                            <p className="stat-number">{formatNumber(totalReviews)}</p>
                         </div>
                         <div className="stat-card stat-card-compact">
                             <h3>Average Score</h3>

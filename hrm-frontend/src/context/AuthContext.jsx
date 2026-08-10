@@ -18,15 +18,16 @@ export function AuthProvider({ children }) {
     useEffect(() => {
         const token = localStorage.getItem("token");
         const storedUser = localStorage.getItem("user");
-        
+
         if (token && storedUser) {
             try {
-                setUser(JSON.parse(storedUser));
+                const parsedUser = JSON.parse(storedUser);
+                setUser(parsedUser);
                 api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-            } catch (e) {
-                console.error("Error parsing stored user:", e);
-                localStorage.removeItem("user");
+            } catch (error) {
+                console.error("Error parsing stored user:", error);
                 localStorage.removeItem("token");
+                localStorage.removeItem("user");
             }
         }
         setLoading(false);
@@ -36,11 +37,11 @@ export function AuthProvider({ children }) {
         try {
             const response = await api.post("/auth/login", { email, password });
             const { token, user } = response.data;
-            
+
             localStorage.setItem("token", token);
             localStorage.setItem("user", JSON.stringify(user));
             api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-            
+
             setUser(user);
             return { success: true, user };
         } catch (error) {
@@ -54,6 +55,7 @@ export function AuthProvider({ children }) {
         localStorage.removeItem("user");
         delete api.defaults.headers.common["Authorization"];
         setUser(null);
+        window.location.href = "/login";
     };
 
     const value = {

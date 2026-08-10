@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 
 function Login() {
-    const [email, setEmail] = useState("admin@hrm.com");
-    const [password, setPassword] = useState("password123");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const { login } = useAuth();
@@ -16,13 +16,18 @@ function Login() {
         setError("");
         setLoading(true);
 
+        if (!email || !password) {
+            setError("Please enter both email and password");
+            setLoading(false);
+            return;
+        }
+
         try {
             await login(email, password);
-            toast.success("Welcome to HRM!");
+            toast.success("Welcome back!");
             navigate("/dashboard");
         } catch (err) {
-            console.error("Login error:", err);
-            const message = err.response?.data?.message || "Login failed. Please try again.";
+            const message = err.response?.data?.message || "Invalid credentials. Please try again.";
             setError(message);
             toast.error(message);
         } finally {
@@ -32,47 +37,92 @@ function Login() {
 
     return (
         <div className="login-page">
-            <div className="login-card">
-                <div className="login-logo">
-                    <h1>⚡ HRM</h1>
-                    <p>Human Resource Management System</p>
+            <div className="login-container">
+                <div className="login-brand">
+                    <div className="brand-content">
+                        <div className="brand-logo">
+                            <span className="logo-icon">⚡</span>
+                            <span className="logo-text">HRM</span>
+                        </div>
+                        <h1>Human Resource<br />Management System</h1>
+                        <p>Streamline your workforce management with our comprehensive HR solution.</p>
+                        <div className="brand-features">
+                            <div className="feature-item">
+                                <span className="feature-icon">✓</span>
+                                <span>Employee Management</span>
+                            </div>
+                            <div className="feature-item">
+                                <span className="feature-icon">✓</span>
+                                <span>Leave Tracking</span>
+                            </div>
+                            <div className="feature-item">
+                                <span className="feature-icon">✓</span>
+                                <span>Attendance Monitoring</span>
+                            </div>
+                            <div className="feature-item">
+                                <span className="feature-icon">✓</span>
+                                <span>Payroll Processing</span>
+                            </div>
+                            <div className="feature-item">
+                                <span className="feature-icon">✓</span>
+                                <span>Performance Reviews</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                {error && <div className="login-error">{error}</div>}
+                <div className="login-form-container">
+                    <div className="login-form-wrapper">
+                        <div className="form-header">
+                            <h2>Welcome Back</h2>
+                            <p>Sign in to access your dashboard</p>
+                        </div>
 
-                <form onSubmit={handleSubmit} className="login-form">
-                    <div className="form-group">
-                        <label>Email Address</label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="admin@hrm.com"
-                            required
-                        />
+                        {error && (
+                            <div className="login-error">
+                                <span className="error-icon">⚠️</span>
+                                {error}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSubmit} className="login-form">
+                            <div className="form-group">
+                                <label>Email Address</label>
+                                <div className="input-wrapper">
+                                    <span className="input-icon">📧</span>
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="Enter your email address"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label>Password</label>
+                                <div className="input-wrapper">
+                                    <span className="input-icon">🔒</span>
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="Enter your password"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <button type="submit" className="login-submit" disabled={loading}>
+                                {loading ? "Signing in..." : "Sign In"}
+                            </button>
+                        </form>
+
+                        <div className="form-footer">
+                            <p>Secure login with 256-bit encryption</p>
+                        </div>
                     </div>
-
-                    <div className="form-group">
-                        <label>Password</label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Enter your password"
-                            required
-                        />
-                    </div>
-
-                    <button type="submit" className="login-btn" disabled={loading}>
-                        {loading ? "Logging in..." : "Login"}
-                    </button>
-                </form>
-
-                <div className="login-footer">
-                    <p>
-                        Don't have an account? <Link to="/register" className="register-link">Register here</Link>
-                    </p>
-                    <small>Default: admin@hrm.com / password123</small>
                 </div>
             </div>
         </div>
