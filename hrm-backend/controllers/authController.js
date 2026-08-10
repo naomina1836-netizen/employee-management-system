@@ -77,6 +77,58 @@ exports.me = async (req, res) => {
     }
 };
 
+exports.updateMe = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const { username, email } = req.body;
+
+        const [users] = await db.query(
+            "SELECT user_id, username, email FROM users WHERE user_id = ?",
+            [userId]
+        );
+
+        if (users.length === 0) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const currentUser = users[0];
+        const nextUsername = username?.trim() || currentUser.username;
+        const nextEmail = email?.trim() || currentUser.email;
+
+        if (!nextUsername || !nextEmail) {
+            return res.status(400).json({ message: "Username and email are required" });
+        }
+
+        const [existing] = await db.query(
+            "SELECT user_id FROM users WHERE (username = ? OR email = ?) AND user_id != ?",
+            [nextUsername, nextEmail, userId]
+        );
+
+        if (existing.length > 0) {
+            return res.status(400).json({ message: "Username or email already exists" });
+        }
+
+        await db.query(
+            "UPDATE users SET username = ?, email = ? WHERE user_id = ?",
+            [nextUsername, nextEmail, userId]
+        );
+
+        const [updatedUsers] = await db.query(
+            `SELECT user_id, username, email, role, employee_id, status, created_at 
+             FROM users WHERE user_id = ?`,
+            [userId]
+        );
+
+        res.json({
+            message: "Profile updated successfully",
+            user: updatedUsers[0]
+        });
+    } catch (error) {
+        console.error("Error updating user profile:", error);
+        res.status(500).json({ message: "Failed to update profile" });
+    }
+};
+
 exports.changePassword = async (req, res) => {
     try {
         const { current_password, new_password } = req.body;

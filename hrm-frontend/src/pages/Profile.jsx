@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 import toast from "react-hot-toast";
 
 function Profile() {
+    const { user, updateUser } = useAuth();
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(false);
@@ -15,13 +17,19 @@ function Profile() {
 
     useEffect(() => {
         loadProfile();
-    }, []);
+    }, [user]);
 
     async function loadProfile() {
+        setLoading(true);
         try {
-            const response = await api.get("/users/me");
+            const response = await api.get("/auth/me");
             setProfile(response.data);
-            setFormData(response.data);
+            setFormData({
+                username: response.data.username || "",
+                email: response.data.email || "",
+                role: response.data.role || "",
+                employee_id: response.data.employee_id || ""
+            });
         } catch (error) {
             console.error("Error loading profile:", error);
             toast.error("Failed to load profile");
@@ -47,9 +55,16 @@ function Profile() {
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
         try {
-            await api.put("/users/me", formData);
+            const response = await api.put("/auth/me", formData);
             toast.success("Profile updated successfully!");
-            setProfile(formData);
+            setProfile(response.data.user);
+            setFormData({
+                username: response.data.user.username || "",
+                email: response.data.user.email || "",
+                role: response.data.user.role || "",
+                employee_id: response.data.user.employee_id || ""
+            });
+            updateUser(response.data.user);
             setEditing(false);
         } catch (error) {
             console.error("Error updating profile:", error);
@@ -113,9 +128,10 @@ function Profile() {
                             <label>Username</label>
                             <input
                                 type="text"
+                                name="username"
                                 value={formData.username}
-                                disabled
-                                style={{ background: "#f5f5f5" }}
+                                onChange={handleChange}
+                                required
                             />
                         </div>
 
@@ -134,7 +150,7 @@ function Profile() {
                             <label>Role</label>
                             <input
                                 type="text"
-                                value={formData.role}
+                                value={formData.role || ""}
                                 disabled
                                 style={{ background: "#f5f5f5" }}
                             />

@@ -8,6 +8,7 @@ router.post("/login", authController.login);
 
 // Protected routes
 router.get("/me", authenticate, authController.me);
+router.put("/me", authenticate, authController.updateMe);
 router.post("/change-password", authenticate, authController.changePassword);
 
 // Admin only routes
