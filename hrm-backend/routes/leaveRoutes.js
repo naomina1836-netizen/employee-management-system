@@ -11,5 +11,6 @@ router.get("/employee/:employeeId", authenticate, leaveController.getByEmployee)
 router.get("/", authenticate, authorize("Admin", "HR", "Manager"), leaveController.getAll);
 router.post("/", authenticate, authorize("Admin", "HR", "Employee"), leaveController.create);
 router.patch("/:id/status", authenticate, authorize("Admin", "HR", "Manager"), leaveController.updateStatus);
+router.delete("/:id", authenticate, authorize("Admin", "HR"), leaveController.delete);
 
 module.exports = router;

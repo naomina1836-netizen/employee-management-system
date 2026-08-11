@@ -44,6 +44,32 @@ exports.getByEmployee = async (req, res) => {
     }
 };
 
+exports.getOne = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const [payroll] = await db.query(
+            `SELECT p.*, 
+                    CONCAT(e.first_name, ' ', e.last_name) as employee_name,
+                    pos.title as position_title
+             FROM payroll p
+             JOIN employees e ON p.employee_id = e.employee_id
+             JOIN positions pos ON e.position_id = pos.position_id
+             WHERE p.payroll_id = ?`,
+            [id]
+        );
+
+        if (payroll.length === 0) {
+            return res.status(404).json({ message: "Payroll record not found" });
+        }
+
+        res.json(payroll[0]);
+    } catch (error) {
+        console.error("Error fetching payroll record:", error);
+        res.status(500).json({ message: "Failed to fetch payroll record" });
+    }
+};
+
 exports.create = async (req, res) => {
     try {
         const {

@@ -8,6 +8,7 @@ router.get("/search", authenticate, authorize("Admin", "HR", "Manager"), payroll
 router.get("/stats", authenticate, authorize("Admin", "HR", "Manager"), payrollController.getStats);
 router.get("/employee/:employeeId", authenticate, payrollController.getByEmployee);
 router.post("/generate", authenticate, authorize("Admin", "HR"), payrollController.generate);
+router.get("/:id", authenticate, authorize("Admin", "HR", "Manager"), payrollController.getOne);
 router.get("/", authenticate, authorize("Admin", "HR", "Manager"), payrollController.getAll);
 router.post("/", authenticate, authorize("Admin", "HR"), payrollController.create);
 router.put("/:id", authenticate, authorize("Admin", "HR"), payrollController.update);

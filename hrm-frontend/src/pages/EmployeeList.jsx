@@ -9,10 +9,33 @@ function EmployeeList() {
     const [employees, setEmployees] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({});
+    const [departments, setDepartments] = useState([]);
+    const [positions, setPositions] = useState([]);
+    const [searchVersion, setSearchVersion] = useState(0);
+    const [filterVersion, setFilterVersion] = useState(0);
+
+    useEffect(() => {
+        loadLookupData();
+    }, []);
 
     useEffect(() => {
         loadEmployees();
     }, [filters]);
+
+    async function loadLookupData() {
+        try {
+            const [deptRes, posRes] = await Promise.all([
+                api.get("/employees/departments"),
+                api.get("/employees/positions")
+            ]);
+
+            setDepartments(deptRes.data);
+            setPositions(posRes.data);
+        } catch (error) {
+            console.error("Error loading employee filters:", error);
+            toast.error("Failed to load employee filters");
+        }
+    }
 
     async function loadEmployees() {
         setLoading(true);
@@ -22,6 +45,7 @@ function EmployeeList() {
             
             if (filters.keyword) params.append("keyword", filters.keyword);
             if (filters.department) params.append("department", filters.department);
+            if (filters.position) params.append("position", filters.position);
             if (filters.status) params.append("status", filters.status);
             
             const query = params.toString();
@@ -39,6 +63,7 @@ function EmployeeList() {
 
     const handleSearch = (keyword) => {
         setFilters({ ...filters, keyword });
+        setSearchVersion((value) => value + 1);
     };
 
     const handleFilterChange = (name, value) => {
@@ -51,18 +76,30 @@ function EmployeeList() {
         }
     };
 
+    const clearFilters = () => {
+        setFilters({});
+        setSearchVersion((value) => value + 1);
+        setFilterVersion((value) => value + 1);
+    };
+
     const filterOptions = [
         {
             name: "department",
             label: "Department",
             type: "select",
-            options: [
-                { value: "1", label: "IT" },
-                { value: "2", label: "HR" },
-                { value: "3", label: "Finance" },
-                { value: "4", label: "Marketing" },
-                { value: "5", label: "Operations" }
-            ]
+            options: departments.map((dept) => ({
+                value: String(dept.department_id),
+                label: dept.department_name
+            }))
+        },
+        {
+            name: "position",
+            label: "Position",
+            type: "select",
+            options: positions.map((position) => ({
+                value: String(position.position_id),
+                label: position.title
+            }))
         },
         {
             name: "status",
@@ -84,13 +121,26 @@ function EmployeeList() {
         <div className="page-container">
             <div className="page-header">
                 <h1>Employees ({employees.length})</h1>
-                <Link to="/employees/create" className="btn-primary">
-                    Add Employee
-                </Link>
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                    <button type="button" className="btn-secondary" onClick={clearFilters}>
+                        Clear Filters
+                    </button>
+                    <Link to="/employees/create" className="btn-primary">
+                        Add Employee
+                    </Link>
+                </div>
             </div>
 
-            <SearchBar onSearch={handleSearch} placeholder="Search by name, email, or phone..." />
-            <FilterBar filters={filterOptions} onFilterChange={handleFilterChange} />
+            <SearchBar
+                key={searchVersion}
+                onSearch={handleSearch}
+                placeholder="Search by name, email, or phone..."
+            />
+            <FilterBar
+                key={filterVersion}
+                filters={filterOptions}
+                onFilterChange={handleFilterChange}
+            />
 
             <div className="table-container">
                 <table className="data-table">

@@ -44,6 +44,32 @@ exports.getByEmployee = async (req, res) => {
     }
 };
 
+exports.getOne = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const [reviews] = await db.query(
+            `SELECT r.*, 
+                    CONCAT(e.first_name, ' ', e.last_name) as employee_name,
+                    CONCAT(rv.first_name, ' ', rv.last_name) as reviewer_name
+             FROM performance_reviews r
+             JOIN employees e ON r.employee_id = e.employee_id
+             JOIN employees rv ON r.reviewer_id = rv.employee_id
+             WHERE r.review_id = ?`,
+            [id]
+        );
+
+        if (reviews.length === 0) {
+            return res.status(404).json({ message: "Review not found" });
+        }
+
+        res.json(reviews[0]);
+    } catch (error) {
+        console.error("Error fetching review:", error);
+        res.status(500).json({ message: "Failed to fetch performance review" });
+    }
+};
+
 exports.create = async (req, res) => {
     try {
         const {

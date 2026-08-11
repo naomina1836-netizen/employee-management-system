@@ -227,7 +227,7 @@ exports.getPositions = async (req, res) => {
 // SEARCH EMPLOYEES
 exports.search = async (req, res) => {
     try {
-        const { keyword, department, status } = req.query;
+        const { keyword, department, position, status } = req.query;
         
         let query = `
             SELECT e.*, 
@@ -252,6 +252,11 @@ exports.search = async (req, res) => {
         if (department) {
             query += ` AND e.department_id = ?`;
             params.push(department);
+        }
+
+        if (position) {
+            query += ` AND e.position_id = ?`;
+            params.push(position);
         }
         
         if (status) {

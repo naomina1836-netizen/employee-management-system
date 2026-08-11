@@ -40,6 +40,30 @@ exports.getByEmployee = async (req, res) => {
     }
 };
 
+exports.getOne = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const [attendance] = await db.query(
+            `SELECT a.*, 
+                    CONCAT(e.first_name, ' ', e.last_name) as employee_name
+             FROM attendance a
+             JOIN employees e ON a.employee_id = e.employee_id
+             WHERE a.attendance_id = ?`,
+            [id]
+        );
+
+        if (attendance.length === 0) {
+            return res.status(404).json({ message: "Attendance record not found" });
+        }
+
+        res.json(attendance[0]);
+    } catch (error) {
+        console.error("Error fetching attendance record:", error);
+        res.status(500).json({ message: "Failed to fetch attendance record" });
+    }
+};
+
 exports.getMonthly = async (req, res) => {
     try {
         const { employeeId, month, year } = req.params;
@@ -61,6 +85,113 @@ exports.getMonthly = async (req, res) => {
     } catch (error) {
         console.error("Error fetching monthly attendance:", error);
         res.status(500).json({ message: "Failed to fetch monthly attendance" });
+    }
+};
+
+exports.getToday = async (req, res) => {
+    try {
+        const employeeId = req.user?.employee_id;
+
+        if (!employeeId) {
+            return res.status(400).json({ message: "No employee profile is linked to this user" });
+        }
+
+        const [attendance] = await db.query(
+            `SELECT a.*, 
+                    CONCAT(e.first_name, ' ', e.last_name) as employee_name
+             FROM attendance a
+             JOIN employees e ON a.employee_id = e.employee_id
+             WHERE a.employee_id = ? AND a.attendance_date = CURDATE()
+             LIMIT 1`,
+            [employeeId]
+        );
+
+        res.json(attendance[0] || null);
+    } catch (error) {
+        console.error("Error fetching today's attendance:", error);
+        res.status(500).json({ message: "Failed to fetch today's attendance" });
+    }
+};
+
+exports.selfCheckIn = async (req, res) => {
+    try {
+        const employeeId = req.user?.employee_id;
+
+        if (!employeeId) {
+            return res.status(400).json({ message: "No employee profile is linked to this user" });
+        }
+
+        const [existing] = await db.query(
+            "SELECT * FROM attendance WHERE employee_id = ? AND attendance_date = CURDATE()",
+            [employeeId]
+        );
+
+        if (existing.length > 0 && existing[0].check_in) {
+            return res.status(400).json({ message: "You have already checked in today" });
+        }
+
+        const checkIn = new Date().toTimeString().slice(0, 8);
+
+        if (existing.length === 0) {
+            await db.query(
+                `INSERT INTO attendance (employee_id, attendance_date, check_in, status, hours_worked)
+                 VALUES (?, CURDATE(), ?, 'Present', 0)`,
+                [employeeId, checkIn]
+            );
+        } else {
+            await db.query(
+                `UPDATE attendance
+                 SET check_in = ?, status = 'Present'
+                 WHERE attendance_id = ?`,
+                [checkIn, existing[0].attendance_id]
+            );
+        }
+
+        res.json({ message: "Checked in successfully" });
+    } catch (error) {
+        console.error("Error checking in:", error);
+        res.status(500).json({ message: "Failed to check in" });
+    }
+};
+
+exports.selfCheckOut = async (req, res) => {
+    try {
+        const employeeId = req.user?.employee_id;
+
+        if (!employeeId) {
+            return res.status(400).json({ message: "No employee profile is linked to this user" });
+        }
+
+        const [existing] = await db.query(
+            "SELECT * FROM attendance WHERE employee_id = ? AND attendance_date = CURDATE()",
+            [employeeId]
+        );
+
+        if (existing.length === 0 || !existing[0].check_in) {
+            return res.status(400).json({ message: "You need to check in first" });
+        }
+
+        if (existing[0].check_out) {
+            return res.status(400).json({ message: "You have already checked out today" });
+        }
+
+        const checkInTime = new Date(`1970-01-01T${existing[0].check_in}`);
+        const checkOut = new Date();
+        const checkOutTime = checkOut.toTimeString().slice(0, 8);
+        const diffMs = checkOut - checkInTime;
+        const hoursWorked = Math.max(0, parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2)));
+
+        await db.query(
+            `UPDATE attendance
+             SET check_out = ?, hours_worked = ?
+             WHERE attendance_id = ?`,
+            [checkOutTime, hoursWorked, existing[0].attendance_id]
+        );
+
+        res.json({ message: "Checked out successfully" });
+    } catch (error) {
+        console.error("Error checking out:", error);
+        res.status(500).json({ message: "Failed to check out" });
     }
 };
 

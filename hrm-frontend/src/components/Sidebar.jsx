@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 
 function Sidebar() {
     const { user, logout } = useAuth();
+    const attendancePath = user?.role === "Employee" ? "/attendance/self" : "/attendance";
 
     const handleLogout = () => {
         if (window.confirm("Are you sure you want to logout?")) {
@@ -14,16 +15,17 @@ function Sidebar() {
         { path: "/dashboard", label: "Dashboard", icon: "📊" },
         { path: "/employees", label: "Employees", icon: "👥" },
         { path: "/leaves", label: "Leave Requests", icon: "📋" },
-        { path: "/attendance", label: "Attendance", icon: "✅" },
+        { path: attendancePath, label: "Attendance", icon: "✅" },
         { path: "/payroll", label: "Payroll", icon: "💰" },
         { path: "/performance", label: "Performance", icon: "⭐" },
+        { path: "/notifications", label: "Notifications", icon: "🔔" },
         { path: "/reports", label: "Reports", icon: "📈" },
         { path: "/profile", label: "Profile", icon: "👤" }
     ];
 
     const filteredNav = navItems.filter(item => {
         if (user?.role === 'Employee') {
-            return ['/dashboard', '/leaves', '/attendance', '/payroll', '/performance', '/profile'].includes(item.path);
+            return ['/dashboard', '/leaves', '/attendance/self', '/payroll', '/performance', '/profile'].includes(item.path);
         }
         return true;
     });

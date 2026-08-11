@@ -28,14 +28,12 @@ function Register() {
         setError("");
         setLoading(true);
 
-        // Validate passwords match
         if (formData.password !== formData.confirmPassword) {
             setError("Passwords do not match");
             setLoading(false);
             return;
         }
 
-        // Validate password length
         if (formData.password.length < 6) {
             setError("Password must be at least 6 characters");
             setLoading(false);
@@ -44,12 +42,11 @@ function Register() {
 
         try {
             const { confirmPassword, ...registerData } = formData;
-            
-            // If employee_id is empty, send null
+
             if (!registerData.employee_id) {
                 registerData.employee_id = null;
             }
-            
+
             await api.post("/auth/register", registerData);
             toast.success("Registration successful! Please login.");
             navigate("/login");
@@ -65,102 +62,151 @@ function Register() {
 
     return (
         <div className="login-page">
-            <div className="login-card">
-                <div className="login-logo">
-                    <h1>⚡ HRM</h1>
-                    <p>Create your account</p>
+            <div className="login-container">
+                <div className="login-brand">
+                    <div className="brand-content">
+                        <div className="brand-logo">
+                            <span className="logo-icon">⚡</span>
+                            <span className="logo-text">HRM</span>
+                        </div>
+                        <h1>Create your<br />account</h1>
+                        <p>Set up your employee, manager, HR, or admin account in a clean, secure workspace.</p>
+                        <div className="brand-features">
+                            <div className="feature-item">
+                                <span className="feature-icon">✓</span>
+                                <span>Fast account setup</span>
+                            </div>
+                            <div className="feature-item">
+                                <span className="feature-icon">✓</span>
+                                <span>Role-based access</span>
+                            </div>
+                            <div className="feature-item">
+                                <span className="feature-icon">✓</span>
+                                <span>Secure password flow</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                {error && <div className="login-error">{error}</div>}
+                <div className="login-form-container">
+                    <div className="login-form-wrapper">
+                        <div className="form-header">
+                            <h2>Register</h2>
+                            <p>Create a new account for the HRM system</p>
+                        </div>
 
-                <form onSubmit={handleSubmit} className="login-form">
-                    <div className="form-group">
-                        <label>Username *</label>
-                        <input
-                            type="text"
-                            name="username"
-                            value={formData.username}
-                            onChange={handleChange}
-                            placeholder="Enter username"
-                            required
-                        />
+                        {error && (
+                            <div className="login-error">
+                                <span className="error-icon">⚠️</span>
+                                {error}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSubmit} className="login-form">
+                            <div className="form-group">
+                                <label>Username *</label>
+                                <div className="input-wrapper">
+                                    <span className="input-icon">👤</span>
+                                    <input
+                                        type="text"
+                                        name="username"
+                                        value={formData.username}
+                                        onChange={handleChange}
+                                        placeholder="Enter username"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label>Email Address *</label>
+                                <div className="input-wrapper">
+                                    <span className="input-icon">📧</span>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        placeholder="you@hrm.com"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label>Role *</label>
+                                <div className="input-wrapper">
+                                    <span className="input-icon">🧩</span>
+                                    <select
+                                        name="role"
+                                        value={formData.role}
+                                        onChange={handleChange}
+                                        required
+                                    >
+                                        <option value="Employee">Employee</option>
+                                        <option value="Manager">Manager</option>
+                                        <option value="HR">HR</option>
+                                        <option value="Admin">Admin</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label>Employee ID (Optional)</label>
+                                <div className="input-wrapper">
+                                    <span className="input-icon">#</span>
+                                    <input
+                                        type="number"
+                                        name="employee_id"
+                                        value={formData.employee_id}
+                                        onChange={handleChange}
+                                        placeholder="Enter employee ID"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label>Password *</label>
+                                <div className="input-wrapper">
+                                    <span className="input-icon">🔒</span>
+                                    <input
+                                        type="password"
+                                        name="password"
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        placeholder="Minimum 6 characters"
+                                        required
+                                        minLength="6"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label>Confirm Password *</label>
+                                <div className="input-wrapper">
+                                    <span className="input-icon">🔒</span>
+                                    <input
+                                        type="password"
+                                        name="confirmPassword"
+                                        value={formData.confirmPassword}
+                                        onChange={handleChange}
+                                        placeholder="Confirm your password"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <button type="submit" className="login-submit" disabled={loading}>
+                                {loading ? "Creating Account..." : "Create Account"}
+                            </button>
+                        </form>
+
+                        <div className="form-footer">
+                            <p>
+                                Already have an account? <Link to="/login" className="register-link">Login here</Link>
+                            </p>
+                        </div>
                     </div>
-
-                    <div className="form-group">
-                        <label>Email Address *</label>
-                        <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            placeholder="you@hrm.com"
-                            required
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label>Role *</label>
-                        <select
-                            name="role"
-                            value={formData.role}
-                            onChange={handleChange}
-                            required
-                        >
-                            <option value="Employee">Employee</option>
-                            <option value="Manager">Manager</option>
-                            <option value="HR">HR</option>
-                            <option value="Admin">Admin</option>
-                        </select>
-                    </div>
-
-                    <div className="form-group">
-                        <label>Employee ID (Optional)</label>
-                        <input
-                            type="number"
-                            name="employee_id"
-                            value={formData.employee_id}
-                            onChange={handleChange}
-                            placeholder="Enter employee ID"
-                        />
-                        <small style={{ color: '#666', fontSize: '12px' }}>
-                            Leave blank if you don't have an employee ID yet
-                        </small>
-                    </div>
-
-                    <div className="form-group">
-                        <label>Password *</label>
-                        <input
-                            type="password"
-                            name="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            placeholder="Minimum 6 characters"
-                            required
-                            minLength="6"
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label>Confirm Password *</label>
-                        <input
-                            type="password"
-                            name="confirmPassword"
-                            value={formData.confirmPassword}
-                            onChange={handleChange}
-                            placeholder="Confirm your password"
-                            required
-                        />
-                    </div>
-
-                    <button type="submit" className="login-btn" disabled={loading}>
-                        {loading ? "Creating Account..." : "Register"}
-                    </button>
-                </form>
-
-                <div className="login-footer">
-                    <p>
-                        Already have an account? <Link to="/login" className="register-link">Login here</Link>
-                    </p>
                 </div>
             </div>
         </div>

@@ -126,6 +126,31 @@ exports.updateStatus = async (req, res) => {
     }
 };
 
+exports.delete = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const [existing] = await db.query(
+            "SELECT * FROM leave_requests WHERE leave_id = ?",
+            [id]
+        );
+
+        if (existing.length === 0) {
+            return res.status(404).json({ message: "Leave request not found" });
+        }
+
+        await db.query(
+            "DELETE FROM leave_requests WHERE leave_id = ?",
+            [id]
+        );
+
+        res.json({ message: "Leave request deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting leave request:", error);
+        res.status(500).json({ message: "Failed to delete leave request" });
+    }
+};
+
 exports.getLeaveTypes = async (req, res) => {
     try {
         const [leaveTypes] = await db.query(

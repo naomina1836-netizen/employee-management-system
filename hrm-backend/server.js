@@ -23,6 +23,7 @@ const attendanceRoutes = require("./routes/attendanceRoutes");
 const payrollRoutes = require("./routes/payrollRoutes");
 const performanceRoutes = require("./routes/performanceRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 // Use Routes
 app.use("/api/auth", authRoutes);
@@ -32,6 +33,7 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/payroll", payrollRoutes);
 app.use("/api/performance", performanceRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Health Check
 app.get("/api/health", (req, res) => {
@@ -50,7 +52,8 @@ app.get("/", (req, res) => {
             attendance: "/api/attendance",
             payroll: "/api/payroll",
             performance: "/api/performance",
-            dashboard: "/api/dashboard"
+            dashboard: "/api/dashboard",
+            notifications: "/api/notifications"
         }
     });
 });
