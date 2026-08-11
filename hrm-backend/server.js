@@ -24,6 +24,7 @@ const payrollRoutes = require("./routes/payrollRoutes");
 const performanceRoutes = require("./routes/performanceRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const { ensureDatabaseSchema } = require("./config/bootstrap");
 
 // Use Routes
 app.use("/api/auth", authRoutes);
@@ -70,11 +71,29 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => {
-    console.log("=================================");
-    console.log("HRM Server running on port " + PORT);
-    console.log("http://localhost:" + PORT);
-    console.log("=================================");
-});
+
+async function startServer() {
+    try {
+        const bootstrapResult = await ensureDatabaseSchema();
+
+        if (bootstrapResult.seededSchema) {
+            console.log("Database schema initialized from database/schema.sql");
+        } else if (bootstrapResult.seededAdmin) {
+            console.log("Demo admin user seeded: admin@hrm.com / password123");
+        }
+
+        app.listen(PORT, () => {
+            console.log("=================================");
+            console.log("HRM Server running on port " + PORT);
+            console.log("http://localhost:" + PORT);
+            console.log("=================================");
+        });
+    } catch (error) {
+        console.error("Failed to initialize database:", error);
+        process.exit(1);
+    }
+}
+
+startServer();
 
 module.exports = app;
