@@ -9,6 +9,7 @@ router.get("/stats", authenticate, authorize("Admin", "HR", "Manager"), attendan
 router.get("/today", authenticate, attendanceController.getToday);
 router.post("/self/check-in", authenticate, attendanceController.selfCheckIn);
 router.post("/self/check-out", authenticate, attendanceController.selfCheckOut);
+router.post("/bulk", authenticate, authorize("Admin", "HR"), attendanceController.bulkCreate);
 router.get("/employee/:employeeId/month/:month/year/:year", authenticate, attendanceController.getMonthly);
 router.get("/employee/:employeeId", authenticate, attendanceController.getByEmployee);
 router.get("/:id", authenticate, authorize("Admin", "HR", "Manager"), attendanceController.getOne);

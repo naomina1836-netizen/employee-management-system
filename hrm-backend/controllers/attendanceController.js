@@ -378,3 +378,80 @@ exports.getStats = async (req, res) => {
         res.status(500).json({ message: "Failed to fetch attendance statistics" });
     }
 };
+
+exports.bulkCreate = async (req, res) => {
+    try {
+        const { attendance_date, records } = req.body;
+
+        if (!attendance_date) {
+            return res.status(400).json({ message: "Attendance date is required" });
+        }
+
+        if (!Array.isArray(records) || records.length === 0) {
+            return res.status(400).json({ message: "At least one attendance record is required" });
+        }
+
+        const results = { created: 0, updated: 0, skipped: 0, errors: [] };
+
+        for (const row of records) {
+            const employee_id = row.employee_id;
+            if (!employee_id) {
+                results.skipped += 1;
+                results.errors.push({ employee_id: null, message: "Missing employee_id" });
+                continue;
+            }
+
+            const status = row.status || "Present";
+            const check_in = row.check_in || null;
+            const check_out = row.check_out || null;
+
+            let hours_worked = 0;
+            if (check_in && check_out) {
+                const checkInTime = new Date("1970-01-01 " + check_in);
+                const checkOutTime = new Date("1970-01-01 " + check_out);
+                const diffMs = checkOutTime - checkInTime;
+                hours_worked = parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2));
+                if (Number.isNaN(hours_worked) || hours_worked < 0) hours_worked = 0;
+            }
+
+            try {
+                const [existing] = await db.query(
+                    "SELECT attendance_id FROM attendance WHERE employee_id = ? AND attendance_date = ?",
+                    [employee_id, attendance_date]
+                );
+
+                if (existing.length > 0) {
+                    await db.query(
+                        `UPDATE attendance
+                         SET check_in = ?, check_out = ?, hours_worked = ?, status = ?
+                         WHERE attendance_id = ?`,
+                        [check_in, check_out, hours_worked, status, existing[0].attendance_id]
+                    );
+                    results.updated += 1;
+                } else {
+                    await db.query(
+                        `INSERT INTO attendance
+                         (employee_id, attendance_date, check_in, check_out, hours_worked, status)
+                         VALUES (?, ?, ?, ?, ?, ?)`,
+                        [employee_id, attendance_date, check_in, check_out, hours_worked, status]
+                    );
+                    results.created += 1;
+                }
+            } catch (err) {
+                results.skipped += 1;
+                results.errors.push({
+                    employee_id,
+                    message: err.message || "Failed to save record"
+                });
+            }
+        }
+
+        res.status(201).json({
+            message: "Bulk attendance processed",
+            ...results
+        });
+    } catch (error) {
+        console.error("Error bulk creating attendance:", error);
+        res.status(500).json({ message: "Failed to process bulk attendance" });
+    }
+};

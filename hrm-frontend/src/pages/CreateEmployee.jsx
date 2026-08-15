@@ -45,11 +45,28 @@ function CreateEmployee() {
     }
 
     const handleChange = (e) => {
+        const { name, value } = e.target;
+        if (name === "department_id") {
+            setFormData({
+                ...formData,
+                department_id: value,
+                position_id: "" // reset position when department changes
+            });
+            return;
+        }
         setFormData({
             ...formData,
-            [e.target.name]: e.target.value
+            [name]: value
         });
     };
+
+    const filteredPositions = formData.department_id
+        ? positions.filter(
+              (pos) =>
+                  String(pos.department_id) === String(formData.department_id) ||
+                  pos.department_id == null
+          )
+        : positions;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -178,9 +195,16 @@ function CreateEmployee() {
 
                     <div className="form-group">
                         <label>Position</label>
-                        <select name="position_id" value={formData.position_id} onChange={handleChange}>
-                            <option value="">Select Position</option>
-                            {positions.map((pos) => (
+                        <select
+                            name="position_id"
+                            value={formData.position_id}
+                            onChange={handleChange}
+                            disabled={!formData.department_id}
+                        >
+                            <option value="">
+                                {formData.department_id ? "Select Position" : "Select department first"}
+                            </option>
+                            {filteredPositions.map((pos) => (
                                 <option key={pos.position_id} value={pos.position_id}>
                                     {pos.title}
                                 </option>
