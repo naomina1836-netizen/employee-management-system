@@ -12,6 +12,7 @@ import CreateLeave from "./pages/CreateLeave";
 import LeaveList from "./pages/LeaveList";
 import AttendanceList from "./pages/AttendanceList";
 import CreateAttendance from "./pages/CreateAttendance";
+import BulkAttendance from "./pages/BulkAttendance";
 import AttendanceSelf from "./pages/AttendanceSelf";
 import AttendanceDetails from "./pages/AttendanceDetails";
 import EditAttendance from "./pages/EditAttendance";
@@ -60,6 +61,7 @@ function App() {
                 <Route path="leaves/create" element={<CreateLeave />} />
                 <Route path="attendance" element={<AttendanceList />} />
                 <Route path="attendance/create" element={<CreateAttendance />} />
+                <Route path="attendance/bulk" element={<BulkAttendance />} />
                 <Route path="attendance/self" element={<AttendanceSelf />} />
                 <Route path="attendance/:id" element={<AttendanceDetails />} />
                 <Route path="attendance/edit/:id" element={<EditAttendance />} />

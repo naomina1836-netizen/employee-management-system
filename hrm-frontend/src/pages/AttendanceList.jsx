@@ -31,9 +31,14 @@ function AttendanceList() {
         <div className="page-container">
             <div className="page-header">
                 <h1>Attendance</h1>
-                <Link to="/attendance/create" className="btn-primary">
-                    Add Attendance
-                </Link>
+                <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                    <Link to="/attendance/bulk" className="btn-primary">
+                        Bulk Attendance
+                    </Link>
+                    <Link to="/attendance/create" className="btn-secondary">
+                        Add One
+                    </Link>
+                </div>
             </div>
 
             <div className="table-container">
