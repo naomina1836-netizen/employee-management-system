@@ -25,6 +25,7 @@ import EditPerformance from "./pages/EditPerformance";
 import PerformanceList from "./pages/PerformanceList";
 import Notifications from "./pages/Notifications";
 import Reports from "./pages/Reports";
+import AdminUsers from "./pages/AdminUsers";
 
 function App() {
     const { user, loading } = useAuth();
@@ -36,16 +37,19 @@ function App() {
     if (!user) {
         return (
             <Routes>
-                <Route path="/" element={<Navigate to="/login" />} />
+                <Route path="/" element={<Navigate to="/login" replace />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
         );
     }
 
+    const isAdminOrHR = user.role === "Admin" || user.role === "HR";
+
     return (
         <Routes>
             <Route path="/" element={<Layout />}>
-                <Route index element={<Navigate to="/dashboard" />} />
+                <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="employees" element={<EmployeeList />} />
@@ -69,7 +73,12 @@ function App() {
                 <Route path="performance/edit/:id" element={<EditPerformance />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="reports" element={<Reports />} />
+                {isAdminOrHR && (
+                    <Route path="admin/users" element={<AdminUsers />} />
+                )}
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
+            <Route path="/login" element={<Navigate to="/dashboard" replace />} />
         </Routes>
     );
 }

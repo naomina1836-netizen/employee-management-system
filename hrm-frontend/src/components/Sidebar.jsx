@@ -13,19 +13,23 @@ function Sidebar() {
 
     const navItems = [
         { path: "/dashboard", label: "Dashboard", icon: "📊" },
-        { path: "/employees", label: "Employees", icon: "👥" },
+        { path: "/employees", label: "Employees", icon: "👥", roles: ["Admin", "HR", "Manager"] },
         { path: "/leaves", label: "Leave Requests", icon: "📋" },
         { path: attendancePath, label: "Attendance", icon: "✅" },
         { path: "/payroll", label: "Payroll", icon: "💰" },
         { path: "/performance", label: "Performance", icon: "⭐" },
         { path: "/notifications", label: "Notifications", icon: "🔔" },
-        { path: "/reports", label: "Reports", icon: "📈" },
+        { path: "/reports", label: "Reports", icon: "📈", roles: ["Admin", "HR", "Manager"] },
+        { path: "/admin/users", label: "Users", icon: "🛡️", roles: ["Admin", "HR"] },
         { path: "/profile", label: "Profile", icon: "👤" }
     ];
 
-    const filteredNav = navItems.filter(item => {
-        if (user?.role === 'Employee') {
-            return ['/dashboard', '/leaves', '/attendance/self', '/payroll', '/performance', '/profile'].includes(item.path);
+    const filteredNav = navItems.filter((item) => {
+        if (item.roles && !item.roles.includes(user?.role)) {
+            return false;
+        }
+        if (user?.role === "Employee") {
+            return ["/dashboard", "/leaves", "/attendance/self", "/payroll", "/performance", "/profile", "/notifications"].includes(item.path);
         }
         return true;
     });
@@ -42,8 +46,8 @@ function Sidebar() {
                     <NavLink
                         key={item.path}
                         to={item.path}
-                        className={({ isActive }) => 
-                            `nav-link ${isActive ? 'active' : ''}`
+                        className={({ isActive }) =>
+                            `nav-link ${isActive ? "active" : ""}`
                         }
                     >
                         <span className="nav-icon">{item.icon}</span>

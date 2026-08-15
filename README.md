@@ -1,6 +1,6 @@
 # Employee Management System
 
-Full-stack HRM app with a React frontend and Express/MySQL backend.
+Full-stack HRM app with a React (Vite) frontend and Express/MySQL backend.
 
 ## Quick Start
 
@@ -11,34 +11,41 @@ git clone https://github.com/naomina1836-netizen/employee-management-system.git
 cd employee-management-system
 ```
 
-### 2. Set up the database
+### 2. Configure the backend
 
-1. Create a MySQL database named `hrm_db`.
-2. Import `database/schema.sql` into that database.
+```bash
+cp hrm-backend/.env.example hrm-backend/.env
+```
 
-The backend now also bootstraps the demo admin account automatically if the schema already exists but the admin row is missing.
-
-### 3. Configure the backend
-
-Create `hrm-backend/.env` with values like these:
+Edit `hrm-backend/.env` with your MySQL credentials and a strong `JWT_SECRET`:
 
 ```env
 PORT=5001
 DB_HOST=localhost
 DB_USER=root
-DB_PASSWORD=
+DB_PASSWORD=your_password
 DB_NAME=hrm_db
-JWT_SECRET=your_secret_key
+JWT_SECRET=replace_with_a_long_random_secret
+JWT_EXPIRE=7d
 ```
+
+Optional: set `CORS_ORIGINS` as a comma-separated list of allowed frontend origins.
+
+### 3. Database
+
+**Option A — automatic (recommended)**  
+On first start, the backend creates `hrm_db` (if missing) and loads `database/schema.sql` when the `users` table is absent. It also seeds the demo admin if needed.
+
+**Option B — manual**
+
+1. Create a MySQL database named `hrm_db`.
+2. Import `database/schema.sql`.
 
 ### 4. Install dependencies
 
 ```bash
-cd hrm-backend
-npm install
-
-cd ../hrm-frontend
-npm install
+cd hrm-backend && npm install
+cd ../hrm-frontend && npm install
 ```
 
 ### 5. Run the app
@@ -50,22 +57,35 @@ cd hrm-backend
 npm run dev
 ```
 
-Frontend:
+Frontend (optional API URL override):
 
 ```bash
 cd hrm-frontend
+# optional: cp .env.example .env
 npm run dev
 ```
 
+- Backend: `http://localhost:5001`
+- Frontend: Vite default (usually `http://localhost:5173`)
+
 ## Demo Login
 
-If you imported the sample schema or let the backend bootstrap the demo account, use:
+- **Email:** `admin@hrm.com`
+- **Password:** `password123`
 
-- Email: `admin@hrm.com`
-- Password: `password123`
+All seeded users share the same password (`password123`).
+
+## Features
+
+- Auth (JWT), roles: Admin, HR, Manager, Employee
+- Employees, leave, attendance (incl. self check-in/out), payroll, performance
+- Dashboard, reports, notifications
+- Admin/HR: user management (`/admin/users`)
+- Settings API: departments & positions (`/api/settings/...`)
 
 ## Notes
 
-- Frontend runs on Vite.
-- Backend runs on Express and connects to MySQL.
-- If login fails on a fresh machine, the first thing to check is whether the database was imported and the backend `.env` values match your local MySQL setup.
+- Frontend API base URL: `VITE_API_URL` (default `http://localhost:5001/api`).
+- Do not commit real `.env` files; use `.env.example` templates.
+- Rate limiting is applied to `/api` and stricter limits on `/api/auth`.
+- Input validation is applied on employee, leave, and payroll create/update routes.

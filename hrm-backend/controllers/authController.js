@@ -243,3 +243,46 @@ exports.resetPassword = async (req, res) => {
         res.status(500).json({ message: "Failed to reset password" });
     }
 };
+
+exports.getAllUsers = async (req, res) => {
+    try {
+        const [users] = await db.query(
+            `SELECT user_id, username, email, role, employee_id, status, created_at
+             FROM users
+             ORDER BY user_id`
+        );
+        res.json(users);
+    } catch (error) {
+        console.error("Error fetching users:", error);
+        res.status(500).json({ message: "Failed to fetch users" });
+    }
+};
+
+exports.updateUserStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        if (!["Active", "Inactive"].includes(status)) {
+            return res.status(400).json({ message: "Status must be Active or Inactive" });
+        }
+
+        if (parseInt(id, 10) === req.user.user_id) {
+            return res.status(400).json({ message: "You cannot change your own status" });
+        }
+
+        const [result] = await db.query(
+            "UPDATE users SET status = ? WHERE user_id = ?",
+            [status, id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json({ message: `User status updated to ${status}` });
+    } catch (error) {
+        console.error("Error updating user status:", error);
+        res.status(500).json({ message: "Failed to update user status" });
+    }
+};

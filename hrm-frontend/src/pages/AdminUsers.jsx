@@ -40,7 +40,11 @@ function AdminUsers() {
     const handleCreate = async (e) => {
         e.preventDefault();
         try {
-            await api.post("/auth/register", formData);
+            const payload = {
+                ...formData,
+                employee_id: formData.employee_id ? Number(formData.employee_id) : null
+            };
+            await api.post("/auth/register", payload);
             toast.success("User created successfully!");
             setShowCreateModal(false);
             setFormData({
