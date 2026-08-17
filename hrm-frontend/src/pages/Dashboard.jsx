@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import {
+    Building2,
+    ClipboardList,
+    Star,
+    Users,
+    Wallet,
+} from "lucide-react";
 
 function Dashboard() {
     const [stats, setStats] = useState({
@@ -42,21 +49,27 @@ function Dashboard() {
 
             <div className="stats-grid">
                 <div className="stat-card">
-                    <div className="stat-icon">👥</div>
+                    <div className="stat-icon">
+                        <Users size={28} strokeWidth={2.2} />
+                    </div>
                     <div className="stat-info">
                         <h3>{stats.totalEmployees}</h3>
                         <p>Total Employees</p>
                     </div>
                 </div>
                 <div className="stat-card">
-                    <div className="stat-icon">🏢</div>
+                    <div className="stat-icon">
+                        <Building2 size={28} strokeWidth={2.2} />
+                    </div>
                     <div className="stat-info">
                         <h3>{stats.totalDepartments}</h3>
                         <p>Departments</p>
                     </div>
                 </div>
                 <div className="stat-card">
-                    <div className="stat-icon">📋</div>
+                    <div className="stat-icon">
+                        <ClipboardList size={28} strokeWidth={2.2} />
+                    </div>
                     <div className="stat-info">
                         <h3>{stats.totalLeaves}</h3>
                         <p>Leave Requests</p>
@@ -64,14 +77,18 @@ function Dashboard() {
                     </div>
                 </div>
                 <div className="stat-card">
-                    <div className="stat-icon">💰</div>
+                    <div className="stat-icon">
+                        <Wallet size={28} strokeWidth={2.2} />
+                    </div>
                     <div className="stat-info">
                         <h3>{stats.totalPayroll}</h3>
                         <p>Payroll Records</p>
                     </div>
                 </div>
                 <div className="stat-card">
-                    <div className="stat-icon">⭐</div>
+                    <div className="stat-icon">
+                        <Star size={28} strokeWidth={2.2} />
+                    </div>
                     <div className="stat-info">
                         <h3>{stats.totalReviews}</h3>
                         <p>Performance Reviews</p>

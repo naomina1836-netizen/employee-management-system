@@ -63,39 +63,81 @@ body {
 }
 
 .route-dashboard::before {
-    background-image: url("../assets/page-art/dashboard.svg");
+    background-image: url("https://res.cloudinary.com/nqb1tl4u/image/upload/v1786971025/dashboard-bg.jpg");
+    background-position: center center;
+    background-size: cover;
+    opacity: 1;
+    filter: saturate(0.95) contrast(1.02);
 }
 
 .route-employees::before {
-    background-image: url("../assets/page-art/people.svg");
+    background-image: url("https://res.cloudinary.com/nqb1tl4u/image/upload/v1786971041/employee-bg.jpg");
+    background-position: center center;
+    background-size: cover;
+    opacity: 1;
+    filter: saturate(0.98) contrast(1.03);
 }
 
 .route-leaves::before {
-    background-image: url("../assets/page-art/time.svg");
+    background-image: url("https://res.cloudinary.com/nqb1tl4u/image/upload/v1786971030/leave-bg.png");
+    background-position: center center;
+    background-size: cover;
+    opacity: 1;
+    filter: saturate(0.98) contrast(1.03);
 }
 
 .route-attendance::before {
-    background-image: url("../assets/page-art/time.svg");
+    background-image: url("https://res.cloudinary.com/nqb1tl4u/image/upload/v1786971029/attendance-bg.jpg");
+    background-position: center center;
+    background-size: cover;
+    opacity: 1;
+    filter: saturate(0.98) contrast(1.03);
 }
 
 .route-payroll::before {
     background-image: url("../assets/page-art/money.svg");
+     background-image: url("https://res.cloudinary.com/nqb1tl4u/image/upload/v1786971046/payroll-bg.jpg");
+    background-position: center center;
+    background-size: cover;
+    opacity: 1;
+    filter: saturate(0.98) contrast(1.03);
+
 }
 
 .route-performance::before {
     background-image: url("../assets/page-art/performance.svg");
+    background-image: url("https://res.cloudinary.com/nqb1tl4u/image/upload/v1786971050/performance-bg.jpg");
+    background-position: center center;
+    background-size: cover;
+    opacity: 1;
+    filter: saturate(0.98) contrast(1.03);
 }
 
 .route-reports::before {
     background-image: url("../assets/page-art/analytics.svg");
+     background-image: url("https://res.cloudinary.com/nqb1tl4u/image/upload/v1786971025/reports-bg.jpg");
+    background-position: center center;
+    background-size: cover;
+    opacity: 1;
+    filter: saturate(0.98) contrast(1.03);
 }
 
 .route-profile::before {
-    background-image: url("../assets/page-art/profile.svg");
+    
+     background-image: url("https://res.cloudinary.com/nqb1tl4u/image/upload/v1786971046/profile-bg.jpg");
+    background-position: center center;
+    background-size: cover;
+    opacity: 1;
+    filter: saturate(0.98) contrast(1.03);
 }
 
 .route-notifications::before {
     background-image: url("../assets/page-art/notifications.svg");
+     background-image: url("https://res.cloudinary.com/nqb1tl4u/image/upload/v1786971033/notifications-bg.jpg");
+    background-position: center center;
+    background-size: cover;
+    opacity: 1;
+    filter: saturate(0.98) contrast(1.03);
 }
 
 .route-admin::before {
@@ -132,6 +174,10 @@ body {
     color: #d4af37;
     font-size: 24px;
     margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .user-role {
@@ -173,7 +219,16 @@ body {
 
 .nav-icon {
     margin-right: 12px;
-    font-size: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nav-icon svg,
+.sidebar-header h2 svg,
+.user-name svg,
+.logout-btn svg {
+    display: block;
 }
 
 .nav-label {
@@ -190,7 +245,9 @@ body {
 }
 
 .user-name {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-weight: 600;
     font-size: 14px;
 }
@@ -212,6 +269,10 @@ body {
     font-size: 14px;
     font-weight: 600;
     transition: background 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .logout-btn:hover {

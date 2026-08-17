@@ -2,6 +2,16 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import {
+    AlertCircle,
+    CheckCircle2,
+    Hash,
+    Lock,
+    Mail,
+    ShieldCheck,
+    UserRound,
+    UsersRound,
+} from "lucide-react";
 
 function Register() {
     const navigate = useNavigate();
@@ -66,22 +76,24 @@ function Register() {
                 <div className="login-brand">
                     <div className="brand-content">
                         <div className="brand-logo">
-                            <span className="logo-icon">⚡</span>
+                            <span className="logo-icon">
+                                <ShieldCheck size={22} strokeWidth={2.2} />
+                            </span>
                             <span className="logo-text">HRM</span>
                         </div>
                         <h1>Create your<br />account</h1>
                         <p>Set up your employee, manager, HR, or admin account in a clean, secure workspace.</p>
                         <div className="brand-features">
                             <div className="feature-item">
-                                <span className="feature-icon">✓</span>
+                                <span className="feature-icon"><CheckCircle2 size={16} strokeWidth={2.4} /></span>
                                 <span>Fast account setup</span>
                             </div>
                             <div className="feature-item">
-                                <span className="feature-icon">✓</span>
+                                <span className="feature-icon"><CheckCircle2 size={16} strokeWidth={2.4} /></span>
                                 <span>Role-based access</span>
                             </div>
                             <div className="feature-item">
-                                <span className="feature-icon">✓</span>
+                                <span className="feature-icon"><CheckCircle2 size={16} strokeWidth={2.4} /></span>
                                 <span>Secure password flow</span>
                             </div>
                         </div>
@@ -97,7 +109,9 @@ function Register() {
 
                         {error && (
                             <div className="login-error">
-                                <span className="error-icon">⚠️</span>
+                                <span className="error-icon">
+                                    <AlertCircle size={16} strokeWidth={2.4} />
+                                </span>
                                 {error}
                             </div>
                         )}
@@ -106,7 +120,9 @@ function Register() {
                             <div className="form-group">
                                 <label>Username *</label>
                                 <div className="input-wrapper">
-                                    <span className="input-icon">👤</span>
+                                    <span className="input-icon">
+                                        <UserRound size={16} strokeWidth={2.2} />
+                                    </span>
                                     <input
                                         type="text"
                                         name="username"
@@ -121,7 +137,9 @@ function Register() {
                             <div className="form-group">
                                 <label>Email Address *</label>
                                 <div className="input-wrapper">
-                                    <span className="input-icon">📧</span>
+                                    <span className="input-icon">
+                                        <Mail size={16} strokeWidth={2.2} />
+                                    </span>
                                     <input
                                         type="email"
                                         name="email"
@@ -136,7 +154,9 @@ function Register() {
                             <div className="form-group">
                                 <label>Role *</label>
                                 <div className="input-wrapper">
-                                    <span className="input-icon">🧩</span>
+                                    <span className="input-icon">
+                                        <UsersRound size={16} strokeWidth={2.2} />
+                                    </span>
                                     <select
                                         name="role"
                                         value={formData.role}
@@ -154,7 +174,9 @@ function Register() {
                             <div className="form-group">
                                 <label>Employee ID (Optional)</label>
                                 <div className="input-wrapper">
-                                    <span className="input-icon">#</span>
+                                    <span className="input-icon">
+                                        <Hash size={16} strokeWidth={2.2} />
+                                    </span>
                                     <input
                                         type="number"
                                         name="employee_id"
@@ -168,7 +190,9 @@ function Register() {
                             <div className="form-group">
                                 <label>Password *</label>
                                 <div className="input-wrapper">
-                                    <span className="input-icon">🔒</span>
+                                    <span className="input-icon">
+                                        <Lock size={16} strokeWidth={2.2} />
+                                    </span>
                                     <input
                                         type="password"
                                         name="password"
@@ -184,7 +208,9 @@ function Register() {
                             <div className="form-group">
                                 <label>Confirm Password *</label>
                                 <div className="input-wrapper">
-                                    <span className="input-icon">🔒</span>
+                                    <span className="input-icon">
+                                        <Lock size={16} strokeWidth={2.2} />
+                                    </span>
                                     <input
                                         type="password"
                                         name="confirmPassword"
