@@ -2,6 +2,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
+import {
+    AlertCircle,
+    CheckCircle2,
+    Lock,
+    Mail,
+    ShieldCheck,
+} from "lucide-react";
 
 function Login() {
     const [email, setEmail] = useState("");
@@ -41,30 +48,32 @@ function Login() {
                 <div className="login-brand">
                     <div className="brand-content">
                         <div className="brand-logo">
-                            <span className="logo-icon">⚡</span>
+                            <span className="logo-icon">
+                                <ShieldCheck size={22} strokeWidth={2.2} />
+                            </span>
                             <span className="logo-text">HRM</span>
                         </div>
                         <h1>Human Resource<br />Management System</h1>
                         <p>Streamline your workforce management with our comprehensive HR solution.</p>
                         <div className="brand-features">
                             <div className="feature-item">
-                                <span className="feature-icon">✓</span>
+                                <span className="feature-icon"><CheckCircle2 size={16} strokeWidth={2.4} /></span>
                                 <span>Employee Management</span>
                             </div>
                             <div className="feature-item">
-                                <span className="feature-icon">✓</span>
+                                <span className="feature-icon"><CheckCircle2 size={16} strokeWidth={2.4} /></span>
                                 <span>Leave Tracking</span>
                             </div>
                             <div className="feature-item">
-                                <span className="feature-icon">✓</span>
+                                <span className="feature-icon"><CheckCircle2 size={16} strokeWidth={2.4} /></span>
                                 <span>Attendance Monitoring</span>
                             </div>
                             <div className="feature-item">
-                                <span className="feature-icon">✓</span>
+                                <span className="feature-icon"><CheckCircle2 size={16} strokeWidth={2.4} /></span>
                                 <span>Payroll Processing</span>
                             </div>
                             <div className="feature-item">
-                                <span className="feature-icon">✓</span>
+                                <span className="feature-icon"><CheckCircle2 size={16} strokeWidth={2.4} /></span>
                                 <span>Performance Reviews</span>
                             </div>
                         </div>
@@ -80,7 +89,9 @@ function Login() {
 
                         {error && (
                             <div className="login-error">
-                                <span className="error-icon">⚠️</span>
+                                <span className="error-icon">
+                                    <AlertCircle size={16} strokeWidth={2.4} />
+                                </span>
                                 {error}
                             </div>
                         )}
@@ -89,7 +100,9 @@ function Login() {
                             <div className="form-group">
                                 <label>Email Address</label>
                                 <div className="input-wrapper">
-                                    <span className="input-icon">📧</span>
+                                    <span className="input-icon">
+                                        <Mail size={16} strokeWidth={2.2} />
+                                    </span>
                                     <input
                                         type="email"
                                         value={email}
@@ -103,7 +116,9 @@ function Login() {
                             <div className="form-group">
                                 <label>Password</label>
                                 <div className="input-wrapper">
-                                    <span className="input-icon">🔒</span>
+                                    <span className="input-icon">
+                                        <Lock size={16} strokeWidth={2.2} />
+                                    </span>
                                     <input
                                         type="password"
                                         value={password}

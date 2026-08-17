@@ -1,6 +1,13 @@
 import { useState, useEffect } from "react";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import {
+    Bell,
+    Briefcase,
+    ClipboardList,
+    MessageSquare,
+    Target,
+} from "lucide-react";
 
 function Notifications() {
     const [notifications, setNotifications] = useState([]);
@@ -72,11 +79,11 @@ function Notifications() {
                             onClick={() => markAsRead(notif.notification_id)}
                         >
                             <div className="notification-icon">
-                                {notif.type === 'application' && '📋'}
-                                {notif.type === 'interview' && '🎯'}
-                                {notif.type === 'offer' && '💼'}
-                                {notif.type === 'message' && '💬'}
-                                {!notif.type && '🔔'}
+                                {notif.type === 'application' && <ClipboardList size={18} strokeWidth={2.2} />}
+                                {notif.type === 'interview' && <Target size={18} strokeWidth={2.2} />}
+                                {notif.type === 'offer' && <Briefcase size={18} strokeWidth={2.2} />}
+                                {notif.type === 'message' && <MessageSquare size={18} strokeWidth={2.2} />}
+                                {!notif.type && <Bell size={18} strokeWidth={2.2} />}
                             </div>
                             <div className="notification-content">
                                 <h4>{notif.title}</h4>
