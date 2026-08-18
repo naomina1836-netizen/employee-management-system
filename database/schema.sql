@@ -13,7 +13,8 @@ CREATE TABLE users (
     INDEX idx_username (username),
     INDEX idx_email (email),
     INDEX idx_role (role),
-    INDEX idx_status (status)
+    INDEX idx_status (status),
+    INDEX idx_employee (employee_id)
 );
 -- 2. DEPARTMENTS TABLE
 CREATE TABLE departments (
@@ -61,6 +62,11 @@ CREATE TABLE employees (
     INDEX idx_manager (manager_id),
     INDEX idx_status (employment_status)
 );
+
+-- Link users.employee_id to employees (added after employees exists)
+ALTER TABLE users
+    ADD CONSTRAINT fk_users_employee
+    FOREIGN KEY (employee_id) REFERENCES employees(employee_id) ON DELETE SET NULL;
 -- 5. ATTENDANCE TABLE
 CREATE TABLE attendance (
     attendance_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -226,18 +232,18 @@ INSERT INTO employees (first_name, last_name, gender, phone, email, address, dat
 
 -- Users (Password: password123 for all)
 INSERT INTO users (username, email, password, role, employee_id) VALUES
-('admin', 'admin@hrm.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Admin', 1),
-('abebe.k', 'abebe.kebede@hrm.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Manager', 1),
-('dawit.s', 'dawit.solomon@hrm.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Manager', 4),
-('helen.a', 'helen.alemayehu@hrm.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'HR', 5),
-('meron.w', 'meron.worku@hrm.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Manager', 7),
-('tigist.h', 'tigist.haile@hrm.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Employee', 2),
-('mekdes.t', 'mekdes.tesfaye@hrm.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Employee', 3),
-('samuel.g', 'samuel.girma@hrm.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Employee', 6),
-('yonas.a', 'yonas.ayele@hrm.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Employee', 8),
-('sara.m', 'sara.mohammed@hrm.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Employee', 9),
-('biruk.t', 'biruk.tekle@hrm.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Employee', 10),
-('selam.a', 'selam.assefa@hrm.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Manager', 11);
+('admin', 'admin@hrm.com', '$2a$10$yTgOMJAH8zZJcC0kuJr.hu6HlpBoUt/jfl09BlhKTh2PwTa7j/Q2i', 'Admin', 1),
+('abebe.k', 'abebe.kebede@hrm.com', '$2a$10$yTgOMJAH8zZJcC0kuJr.hu6HlpBoUt/jfl09BlhKTh2PwTa7j/Q2i', 'Manager', 1),
+('dawit.s', 'dawit.solomon@hrm.com', '$2a$10$yTgOMJAH8zZJcC0kuJr.hu6HlpBoUt/jfl09BlhKTh2PwTa7j/Q2i', 'Manager', 4),
+('helen.a', 'helen.alemayehu@hrm.com', '$2a$10$yTgOMJAH8zZJcC0kuJr.hu6HlpBoUt/jfl09BlhKTh2PwTa7j/Q2i', 'HR', 5),
+('meron.w', 'meron.worku@hrm.com', '$2a$10$yTgOMJAH8zZJcC0kuJr.hu6HlpBoUt/jfl09BlhKTh2PwTa7j/Q2i', 'Manager', 7),
+('tigist.h', 'tigist.haile@hrm.com', '$2a$10$yTgOMJAH8zZJcC0kuJr.hu6HlpBoUt/jfl09BlhKTh2PwTa7j/Q2i', 'Employee', 2),
+('mekdes.t', 'mekdes.tesfaye@hrm.com', '$2a$10$yTgOMJAH8zZJcC0kuJr.hu6HlpBoUt/jfl09BlhKTh2PwTa7j/Q2i', 'Employee', 3),
+('samuel.g', 'samuel.girma@hrm.com', '$2a$10$yTgOMJAH8zZJcC0kuJr.hu6HlpBoUt/jfl09BlhKTh2PwTa7j/Q2i', 'Employee', 6),
+('yonas.a', 'yonas.ayele@hrm.com', '$2a$10$yTgOMJAH8zZJcC0kuJr.hu6HlpBoUt/jfl09BlhKTh2PwTa7j/Q2i', 'Employee', 8),
+('sara.m', 'sara.mohammed@hrm.com', '$2a$10$yTgOMJAH8zZJcC0kuJr.hu6HlpBoUt/jfl09BlhKTh2PwTa7j/Q2i', 'Employee', 9),
+('biruk.t', 'biruk.tekle@hrm.com', '$2a$10$yTgOMJAH8zZJcC0kuJr.hu6HlpBoUt/jfl09BlhKTh2PwTa7j/Q2i', 'Employee', 10),
+('selam.a', 'selam.assefa@hrm.com', '$2a$10$yTgOMJAH8zZJcC0kuJr.hu6HlpBoUt/jfl09BlhKTh2PwTa7j/Q2i', 'Manager', 11);
 
 -- Sample Attendance
 INSERT INTO attendance (employee_id, attendance_date, check_in, check_out, hours_worked, status) VALUES

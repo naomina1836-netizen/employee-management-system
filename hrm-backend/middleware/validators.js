@@ -1,42 +1,67 @@
-const { body, validationResult } = require("express-validator");
+// Lightweight validators (no express-validator dependency)
 
-// Employee validation rules
-const validateEmployee = [
-    body("first_name").notEmpty().withMessage("First name is required"),
-    body("last_name").notEmpty().withMessage("Last name is required"),
-    body("email").isEmail().withMessage("Valid email is required"),
-    body("phone").optional().isString().withMessage("Phone must be a string"),
-    body("gender").optional().isIn(["Male", "Female"]).withMessage("Gender must be Male or Female"),
-    body("employment_status").optional().isIn(["Active", "Resigned", "Terminated"]).withMessage("Invalid employment status")
-];
+function runRules(req, rules) {
+    const errors = [];
+    for (const rule of rules) {
+        const value = req.body?.[rule.field];
+        if (rule.required && (value === undefined || value === null || value === "")) {
+            errors.push({ field: rule.field, message: rule.message || `${rule.field} is required` });
+            continue;
+        }
+        if (value === undefined || value === null || value === "") continue;
 
-// Leave validation rules
-const validateLeave = [
-    body("employee_id").isInt().withMessage("Valid employee ID is required"),
-    body("leave_type_id").isInt().withMessage("Valid leave type is required"),
-    body("start_date").isDate().withMessage("Valid start date is required"),
-    body("end_date").isDate().withMessage("Valid end date is required")
-];
-
-// Payroll validation rules
-const validatePayroll = [
-    body("employee_id").isInt().withMessage("Valid employee ID is required"),
-    body("month").isString().withMessage("Month is required"),
-    body("year").isInt().withMessage("Valid year is required"),
-    body("basic_salary").isDecimal().withMessage("Basic salary must be a number")
-];
-
-// Handle validation errors
-const handleValidationErrors = (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ 
-            message: "Validation failed", 
-            errors: errors.array() 
-        });
+        if (rule.type === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value))) {
+            errors.push({ field: rule.field, message: rule.message || "Valid email is required" });
+        }
+        if (rule.type === "int" && !Number.isInteger(Number(value))) {
+            errors.push({ field: rule.field, message: rule.message || `${rule.field} must be an integer` });
+        }
+        if (rule.type === "number" && Number.isNaN(Number(value))) {
+            errors.push({ field: rule.field, message: rule.message || `${rule.field} must be a number` });
+        }
+        if (rule.enum && !rule.enum.includes(value)) {
+            errors.push({ field: rule.field, message: rule.message || `Invalid value for ${rule.field}` });
+        }
+        if (rule.minLength && String(value).length < rule.minLength) {
+            errors.push({ field: rule.field, message: rule.message || `${rule.field} is too short` });
+        }
     }
-    next();
-};
+    return errors;
+}
+
+function makeValidator(rules) {
+    return (req, res, next) => {
+        const errors = runRules(req, rules);
+        if (errors.length) {
+            return res.status(400).json({ message: "Validation failed", errors });
+        }
+        next();
+    };
+}
+
+const validateEmployee = makeValidator([
+    { field: "first_name", required: true },
+    { field: "last_name", required: true },
+    { field: "email", required: true, type: "email" },
+    { field: "gender", enum: ["Male", "Female"] },
+    { field: "employment_status", enum: ["Active", "Resigned", "Terminated"] }
+]);
+
+const validateLeave = makeValidator([
+    { field: "employee_id", required: true, type: "int" },
+    { field: "leave_type_id", required: true, type: "int" },
+    { field: "start_date", required: true },
+    { field: "end_date", required: true }
+]);
+
+const validatePayroll = makeValidator([
+    { field: "employee_id", required: true, type: "int" },
+    { field: "month", required: true },
+    { field: "year", required: true, type: "int" },
+    { field: "basic_salary", required: true, type: "number" }
+]);
+
+const handleValidationErrors = (req, res, next) => next();
 
 module.exports = {
     validateEmployee,

@@ -16,21 +16,47 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        const storedUser = localStorage.getItem("user");
+        let cancelled = false;
 
-        if (token && storedUser) {
+        async function restoreSession() {
+            const token = localStorage.getItem("token");
+            const storedUser = localStorage.getItem("user");
+
+            if (!token) {
+                if (!cancelled) setLoading(false);
+                return;
+            }
+
+            // Optimistic restore so UI can paint quickly
+            if (storedUser) {
+                try {
+                    const parsedUser = JSON.parse(storedUser);
+                    if (!cancelled) setUser(parsedUser);
+                } catch {
+                    localStorage.removeItem("user");
+                }
+            }
+
             try {
-                const parsedUser = JSON.parse(storedUser);
-                setUser(parsedUser);
-                api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+                const response = await api.get("/auth/me");
+                if (!cancelled) {
+                    setUser(response.data);
+                    localStorage.setItem("user", JSON.stringify(response.data));
+                }
             } catch (error) {
-                console.error("Error parsing stored user:", error);
+                console.error("Session validation failed:", error);
                 localStorage.removeItem("token");
                 localStorage.removeItem("user");
+                if (!cancelled) setUser(null);
+            } finally {
+                if (!cancelled) setLoading(false);
             }
         }
-        setLoading(false);
+
+        restoreSession();
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     const login = async (email, password) => {
@@ -40,7 +66,6 @@ export function AuthProvider({ children }) {
 
             localStorage.setItem("token", token);
             localStorage.setItem("user", JSON.stringify(user));
-            api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
             setUser(user);
             return { success: true, user };
@@ -58,7 +83,6 @@ export function AuthProvider({ children }) {
     const logout = () => {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
-        delete api.defaults.headers.common["Authorization"];
         setUser(null);
         window.location.href = "/login";
     };
