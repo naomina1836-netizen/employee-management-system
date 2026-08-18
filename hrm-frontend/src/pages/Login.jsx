@@ -5,8 +5,6 @@ import toast from "react-hot-toast";
 import {
     AlertCircle,
     CheckCircle2,
-    Lock,
-    Mail,
     ShieldCheck,
 } from "lucide-react";
 
@@ -99,15 +97,11 @@ function Login() {
                         <form onSubmit={handleSubmit} className="login-form">
                             <div className="form-group">
                                 <label>Email Address</label>
-                                <div className="input-wrapper">
-                                    <span className="input-icon">
-                                        <Mail size={16} strokeWidth={2.2} />
-                                    </span>
+                                <div className="input-wrapper input-wrapper--plain">
                                     <input
                                         type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="Enter your email address"
                                         required
                                     />
                                 </div>
@@ -115,15 +109,11 @@ function Login() {
 
                             <div className="form-group">
                                 <label>Password</label>
-                                <div className="input-wrapper">
-                                    <span className="input-icon">
-                                        <Lock size={16} strokeWidth={2.2} />
-                                    </span>
+                                <div className="input-wrapper input-wrapper--plain">
                                     <input
                                         type="password"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="Enter your password"
                                         required
                                     />
                                 </div>
