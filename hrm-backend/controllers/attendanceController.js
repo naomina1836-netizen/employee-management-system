@@ -22,6 +22,11 @@ exports.getByEmployee = async (req, res) => {
     try {
         const { employeeId } = req.params;
 
+        if (req.user.role === "Employee" &&
+            (!req.user.employee_id || Number(employeeId) !== Number(req.user.employee_id))) {
+            return res.status(403).json({ message: "You can only view your own attendance records" });
+        }
+
         const [attendance] = await db.query(
             `SELECT a.*, 
                     CONCAT(e.first_name, ' ', e.last_name) as employee_name
@@ -67,6 +72,11 @@ exports.getOne = async (req, res) => {
 exports.getMonthly = async (req, res) => {
     try {
         const { employeeId, month, year } = req.params;
+
+        if (req.user.role === "Employee" &&
+            (!req.user.employee_id || Number(employeeId) !== Number(req.user.employee_id))) {
+            return res.status(403).json({ message: "You can only view your own attendance records" });
+        }
 
         const [attendance] = await db.query(
             `SELECT a.*, 

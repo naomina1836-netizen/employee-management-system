@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
 
 function CreateLeave() {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [employees, setEmployees] = useState([]);
     const [leaveTypes, setLeaveTypes] = useState([]);
@@ -19,7 +21,7 @@ function CreateLeave() {
 
     useEffect(() => {
         loadDropdownData();
-    }, []);
+    }, [user]);
 
     useEffect(() => {
         calculateDays();
@@ -27,10 +29,18 @@ function CreateLeave() {
 
     async function loadDropdownData() {
         try {
-            const [empRes, typeRes] = await Promise.all([
-                api.get("/employees"),
-                api.get("/leaves/types")
-            ]);
+            if (user?.role === "Employee") {
+                if (!user.employee_id) {
+                    toast.error("Your account is not linked to an employee profile");
+                    return;
+                }
+                const typeRes = await api.get("/leaves/types");
+                setFormData((current) => ({ ...current, employee_id: String(user.employee_id) }));
+                setLeaveTypes(typeRes.data);
+                return;
+            }
+
+            const [empRes, typeRes] = await Promise.all([api.get("/employees"), api.get("/leaves/types")]);
             setEmployees(empRes.data);
             setLeaveTypes(typeRes.data);
         } catch (error) {
@@ -85,6 +95,12 @@ function CreateLeave() {
 
             <div className="form-container">
                 <form onSubmit={handleSubmit} className="form-grid">
+                    {user?.role === "Employee" ? (
+                    <div className="form-group">
+                        <label>Employee</label>
+                        <input value={user.username} disabled />
+                    </div>
+                    ) : (
                     <div className="form-group">
                         <label>Employee *</label>
                         <select name="employee_id" value={formData.employee_id} onChange={handleChange} required>
@@ -96,6 +112,7 @@ function CreateLeave() {
                             ))}
                         </select>
                     </div>
+                    )}
 
                     <div className="form-group">
                         <label>Leave Type *</label>

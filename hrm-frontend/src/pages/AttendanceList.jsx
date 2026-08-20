@@ -2,10 +2,13 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
 
 function AttendanceList() {
     const [attendance, setAttendance] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { user } = useAuth();
+    const canManageAttendance = ["Admin", "HR"].includes(user?.role);
 
     useEffect(() => {
         loadAttendance();
@@ -32,12 +35,12 @@ function AttendanceList() {
             <div className="page-header">
                 <h1>Attendance</h1>
                 <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                    <Link to="/attendance/bulk" className="btn-primary">
+                    {canManageAttendance && <Link to="/attendance/bulk" className="btn-primary">
                         Bulk Attendance
-                    </Link>
-                    <Link to="/attendance/create" className="btn-secondary">
+                    </Link>}
+                    {canManageAttendance && <Link to="/attendance/create" className="btn-secondary">
                         Add One
-                    </Link>
+                    </Link>}
                 </div>
             </div>
 
@@ -76,7 +79,7 @@ function AttendanceList() {
                                     </td>
                                     <td>
                                         <Link to={`/attendance/${att.attendance_id}`} className="btn-sm">View</Link>
-                                        <Link to={`/attendance/edit/${att.attendance_id}`} className="btn-sm btn-edit">Edit</Link>
+                                        {canManageAttendance && <Link to={`/attendance/edit/${att.attendance_id}`} className="btn-sm btn-edit">Edit</Link>}
                                     </td>
                                 </tr>
                             ))

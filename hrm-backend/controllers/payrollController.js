@@ -24,6 +24,11 @@ exports.getByEmployee = async (req, res) => {
     try {
         const { employeeId } = req.params;
 
+        if (req.user.role === "Employee" &&
+            (!req.user.employee_id || Number(employeeId) !== Number(req.user.employee_id))) {
+            return res.status(403).json({ message: "You can only view your own payroll records" });
+        }
+
         const [payroll] = await db.query(
             `SELECT p.*, 
                     CONCAT(e.first_name, ' ', e.last_name) as employee_name,

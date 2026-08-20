@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/authController");
 const authenticate = require("../middleware/authMiddleware");
+const authorize = require("../middleware/roleMiddleware");
 const { authLimiter } = require("../middleware/rateLimiter");
 
 // Public routes (stricter rate limit on login)
@@ -13,7 +14,7 @@ router.put("/me", authenticate, authController.updateMe);
 router.post("/change-password", authenticate, authController.changePassword);
 
 // Admin / HR routes
-router.post("/register", authenticate, authController.register);
-router.post("/reset-password", authenticate, authController.resetPassword);
+router.post("/register", authenticate, authorize("Admin", "HR"), authController.register);
+router.post("/reset-password", authenticate, authorize("Admin"), authController.resetPassword);
 
 module.exports = router;

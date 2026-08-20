@@ -4,6 +4,7 @@ import api from "../services/api";
 import toast from "react-hot-toast";
 import SearchBar from "../components/SearchBar";
 import FilterBar from "../components/FilterBar";
+import { useAuth } from "../context/AuthContext";
 
 function LeaveList() {
     const [leaves, setLeaves] = useState([]);
@@ -12,6 +13,10 @@ function LeaveList() {
     const [leaveTypes, setLeaveTypes] = useState([]);
     const [searchVersion, setSearchVersion] = useState(0);
     const [filterVersion, setFilterVersion] = useState(0);
+    const { user } = useAuth();
+    const isEmployee = user?.role === "Employee";
+    const canApprove = ["Admin", "HR", "Manager"].includes(user?.role);
+    const canDelete = ["Admin", "HR"].includes(user?.role);
 
     useEffect(() => {
         loadLeaveTypes();
@@ -19,7 +24,7 @@ function LeaveList() {
 
     useEffect(() => {
         loadLeaves();
-    }, [filters]);
+    }, [filters, user]);
 
     async function loadLeaveTypes() {
         try {
@@ -34,7 +39,11 @@ function LeaveList() {
     async function loadLeaves() {
         setLoading(true);
         try {
-            let url = "/leaves";
+            if (isEmployee && !user?.employee_id) {
+                setLeaves([]);
+                return;
+            }
+            let url = isEmployee ? `/leaves/employee/${user.employee_id}` : "/leaves";
             const params = new URLSearchParams();
             if (filters.keyword) params.append("keyword", filters.keyword);
             if (filters.status) params.append("status", filters.status);
@@ -43,7 +52,7 @@ function LeaveList() {
             if (filters.end_date) params.append("end_date", filters.end_date);
             
             const query = params.toString();
-            if (query) url += `/search?${query}`;
+            if (!isEmployee && query) url += `/search?${query}`;
             
             const response = await api.get(url);
             setLeaves(response.data);
@@ -152,16 +161,10 @@ function LeaveList() {
                 </div>
             </div>
 
-            <SearchBar
-                key={searchVersion}
-                onSearch={handleSearch}
-                placeholder="Search by employee or leave type..."
-            />
-            <FilterBar
-                key={filterVersion}
-                filters={filterOptions}
-                onFilterChange={handleFilterChange}
-            />
+            {!isEmployee && <>
+                <SearchBar key={searchVersion} onSearch={handleSearch} placeholder="Search by employee or leave type..." />
+                <FilterBar key={filterVersion} filters={filterOptions} onFilterChange={handleFilterChange} />
+            </>}
 
             <div className="table-container">
                 <table className="data-table">
@@ -197,7 +200,7 @@ function LeaveList() {
                                         </span>
                                     </td>
                                     <td>
-                                        {leave.status === 'Pending' && (
+                                        {canApprove && leave.status === 'Pending' && (
                                             <>
                                                 <button 
                                                     onClick={() => updateStatus(leave.leave_id, 'Approved')}
@@ -213,12 +216,12 @@ function LeaveList() {
                                                 </button>
                                             </>
                                         )}
-                                        <button
+                                        {canDelete && <button
                                             onClick={() => deleteLeave(leave.leave_id)}
                                             className="btn-sm btn-danger"
                                         >
                                             Delete
-                                        </button>
+                                        </button>}
                                     </td>
                                 </tr>
                             ))
