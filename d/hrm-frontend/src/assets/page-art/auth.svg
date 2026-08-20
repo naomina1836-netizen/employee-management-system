@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" fill="none">
+  <defs>
+    <linearGradient id="authA" x1="140" y1="120" x2="1020" y2="700" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D4AF37" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#F2D16B" stop-opacity="0.82"/>
+    </linearGradient>
+    <linearGradient id="authB" x1="260" y1="120" x2="940" y2="680" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1A1A2E" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#34435E" stop-opacity="0.72"/>
+    </linearGradient>
+  </defs>
+  <circle cx="250" cy="180" r="110" fill="url(#authA)" fill-opacity="0.16"/>
+  <circle cx="950" cy="620" r="160" fill="url(#authB)" fill-opacity="0.12"/>
+  <rect x="360" y="170" width="500" height="340" rx="34" fill="#1A1A2E" fill-opacity="0.92"/>
+  <rect x="400" y="220" width="420" height="34" rx="17" fill="#F4F6FB" fill-opacity="0.12"/>
+  <rect x="400" y="280" width="260" height="24" rx="12" fill="#F4F6FB" fill-opacity="0.18"/>
+  <rect x="400" y="324" width="340" height="24" rx="12" fill="#F4F6FB" fill-opacity="0.14"/>
+  <rect x="400" y="368" width="220" height="54" rx="16" fill="url(#authA)"/>
+  <path d="M720 300c0-63 49-114 110-114s110 51 110 114v74H720v-74Z" fill="url(#authA)" fill-opacity="0.22"/>
+  <circle cx="830" cy="252" r="42" fill="url(#authA)" fill-opacity="0.7"/>
+  <path d="M805 252l18 18 35-40" stroke="#1A1A2E" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M310 530c74-72 172-105 290-101 118 4 209 39 277 104" stroke="#D4AF37" stroke-width="18" stroke-linecap="round" stroke-dasharray="1 24"/>
+</svg>

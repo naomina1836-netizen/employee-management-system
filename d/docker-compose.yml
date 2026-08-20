@@ -1,0 +1,53 @@
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-rootpass}
+      MYSQL_DATABASE: ${DB_NAME:-hrm_db}
+    ports:
+      - "3306:3306"
+    volumes:
+      - hrm_mysql_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_PASSWORD:-rootpass}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./hrm-backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      PORT: 5001
+      NODE_ENV: development
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD:-rootpass}
+      DB_NAME: ${DB_NAME:-hrm_db}
+      JWT_SECRET: ${JWT_SECRET:-dev_only_change_me_to_a_long_random_secret_32chars}
+      JWT_EXPIRE: 7d
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3000
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./hrm-frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:5001/api
+    depends_on:
+      - backend
+
+volumes:
+  hrm_mysql_data:

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" fill="none">
+  <defs>
+    <linearGradient id="moneyA" x1="210" y1="120" x2="990" y2="680" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D4AF37"/>
+      <stop offset="1" stop-color="#F2D16B"/>
+    </linearGradient>
+    <linearGradient id="moneyB" x1="310" y1="150" x2="880" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1A1A2E"/>
+      <stop offset="1" stop-color="#34435E"/>
+    </linearGradient>
+  </defs>
+  <circle cx="240" cy="160" r="120" fill="url(#moneyA)" fill-opacity="0.14"/>
+  <circle cx="960" cy="620" r="170" fill="url(#moneyB)" fill-opacity="0.12"/>
+  <rect x="180" y="180" width="330" height="300" rx="32" fill="#1A1A2E" fill-opacity="0.92"/>
+  <rect x="560" y="150" width="470" height="180" rx="32" fill="url(#moneyB)" fill-opacity="0.82"/>
+  <rect x="560" y="370" width="470" height="240" rx="32" fill="url(#moneyA)" fill-opacity="0.22"/>
+  <circle cx="345" cy="330" r="82" fill="url(#moneyA)" fill-opacity="0.98"/>
+  <path d="M315 334c0-22 13-32 30-32s30 10 30 24-12 21-30 28-30 15-30 30 13 30 30 30 30-10 30-32" stroke="#1A1A2E" stroke-width="14" stroke-linecap="round"/>
+  <path d="M345 284v164" stroke="#1A1A2E" stroke-width="14" stroke-linecap="round"/>
+  <rect x="620" y="210" width="170" height="26" rx="13" fill="#F4F6FB" fill-opacity="0.16"/>
+  <rect x="620" y="250" width="250" height="18" rx="9" fill="#F4F6FB" fill-opacity="0.12"/>
+  <rect x="620" y="430" width="130" height="86" rx="18" fill="#1A1A2E" fill-opacity="0.16"/>
+  <rect x="770" y="410" width="130" height="106" rx="18" fill="#1A1A2E" fill-opacity="0.18"/>
+  <rect x="920" y="388" width="130" height="128" rx="18" fill="#1A1A2E" fill-opacity="0.22"/>
+  <path d="M620 520c52-44 113-66 184-66 71 0 142 22 213 66" stroke="#D4AF37" stroke-width="16" stroke-linecap="round" stroke-dasharray="1 20"/>
+</svg>

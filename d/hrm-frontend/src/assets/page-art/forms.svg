@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" fill="none">
+  <defs>
+    <linearGradient id="formA" x1="180" y1="130" x2="1020" y2="690" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D4AF37"/>
+      <stop offset="1" stop-color="#F2D16B"/>
+    </linearGradient>
+    <linearGradient id="formB" x1="320" y1="150" x2="880" y2="640" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1A1A2E"/>
+      <stop offset="1" stop-color="#34435E"/>
+    </linearGradient>
+  </defs>
+  <circle cx="210" cy="180" r="120" fill="url(#formA)" fill-opacity="0.14"/>
+  <circle cx="960" cy="610" r="160" fill="url(#formB)" fill-opacity="0.12"/>
+  <rect x="220" y="160" width="400" height="470" rx="36" fill="#1A1A2E" fill-opacity="0.92"/>
+  <rect x="700" y="180" width="280" height="340" rx="36" fill="url(#formB)" fill-opacity="0.84"/>
+  <rect x="270" y="220" width="300" height="28" rx="14" fill="#F4F6FB" fill-opacity="0.14"/>
+  <rect x="270" y="280" width="250" height="22" rx="11" fill="#F4F6FB" fill-opacity="0.1"/>
+  <rect x="270" y="330" width="300" height="22" rx="11" fill="#F4F6FB" fill-opacity="0.1"/>
+  <rect x="270" y="380" width="300" height="108" rx="20" fill="url(#formA)" fill-opacity="0.22"/>
+  <rect x="748" y="254" width="140" height="26" rx="13" fill="#F4F6FB" fill-opacity="0.12"/>
+  <rect x="748" y="300" width="180" height="20" rx="10" fill="#F4F6FB" fill-opacity="0.1"/>
+  <rect x="748" y="338" width="110" height="54" rx="16" fill="url(#formA)"/>
+  <path d="M780 365l18 18 34-40" stroke="#1A1A2E" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M260 540h320" stroke="url(#formA)" stroke-width="16" stroke-linecap="round" stroke-dasharray="2 18"/>
+</svg>

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" fill="none">
+  <defs>
+    <linearGradient id="anaA" x1="190" y1="150" x2="1000" y2="660" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D4AF37"/>
+      <stop offset="1" stop-color="#F2D16B"/>
+    </linearGradient>
+    <linearGradient id="anaB" x1="300" y1="160" x2="920" y2="640" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1A1A2E"/>
+      <stop offset="1" stop-color="#34435E"/>
+    </linearGradient>
+  </defs>
+  <circle cx="220" cy="180" r="120" fill="url(#anaA)" fill-opacity="0.13"/>
+  <circle cx="950" cy="610" r="170" fill="url(#anaB)" fill-opacity="0.12"/>
+  <rect x="170" y="160" width="420" height="420" rx="34" fill="#1A1A2E" fill-opacity="0.92"/>
+  <rect x="640" y="140" width="390" height="180" rx="34" fill="url(#anaB)" fill-opacity="0.84"/>
+  <rect x="640" y="360" width="390" height="220" rx="34" fill="url(#anaA)" fill-opacity="0.2"/>
+  <path d="M230 470V320M300 470V260M370 470V340M440 470V220M510 470V300" stroke="url(#anaA)" stroke-width="20" stroke-linecap="round"/>
+  <circle cx="230" cy="320" r="10" fill="#F2D16B"/>
+  <circle cx="300" cy="260" r="10" fill="#D4AF37"/>
+  <circle cx="370" cy="340" r="10" fill="#F2D16B"/>
+  <circle cx="440" cy="220" r="10" fill="#D4AF37"/>
+  <circle cx="510" cy="300" r="10" fill="#F2D16B"/>
+  <rect x="680" y="190" width="150" height="18" rx="9" fill="#F4F6FB" fill-opacity="0.12"/>
+  <rect x="680" y="230" width="210" height="18" rx="9" fill="#F4F6FB" fill-opacity="0.1"/>
+  <path d="M680 470c60-50 120-72 180-66 60 6 120 34 180 84" stroke="#D4AF37" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M840 492c-16 0-28-13-28-28s12-28 28-28 28 13 28 28-12 28-28 28Z" fill="#1A1A2E" fill-opacity="0.7"/>
+</svg>
