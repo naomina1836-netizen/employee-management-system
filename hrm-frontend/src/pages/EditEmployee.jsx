@@ -55,10 +55,18 @@ function EditEmployee() {
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (name === "department_id") {
+            const departmentManagers = employees.filter(
+                (employee) =>
+                    String(employee.department_id) === String(value) &&
+                    employee.user_role === "Manager"
+            );
             setFormData({
                 ...formData,
                 department_id: value,
-                position_id: "" // reset position when department changes
+                position_id: "", // reset position when department changes
+                manager_id: departmentManagers.length === 1
+                    ? String(departmentManagers[0].employee_id)
+                    : ""
             });
             return;
         }
@@ -75,6 +83,14 @@ function EditEmployee() {
                   pos.department_id == null
           )
         : positions;
+
+    const departmentManagers = formData.department_id
+        ? employees.filter(
+              (employee) =>
+                  String(employee.department_id) === String(formData.department_id) &&
+                  employee.user_role === "Manager"
+          )
+        : [];
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -220,10 +236,21 @@ function EditEmployee() {
                     </div>
 
                     <div className="form-group">
-                        <label>Manager</label>
-                        <select name="manager_id" value={formData.manager_id || ""} onChange={handleChange}>
-                            <option value="">Select Manager</option>
-                            {employees.map((emp) => (
+                        <label>Department Manager</label>
+                        <select
+                            name="manager_id"
+                            value={formData.manager_id || ""}
+                            onChange={handleChange}
+                            disabled={!formData.department_id}
+                        >
+                            <option value="">
+                                {!formData.department_id
+                                    ? "Select department first"
+                                    : departmentManagers.length
+                                        ? "Select Department Manager"
+                                        : "No manager assigned to this department"}
+                            </option>
+                            {departmentManagers.map((emp) => (
                                 <option key={emp.employee_id} value={emp.employee_id}>
                                     {emp.first_name} {emp.last_name}
                                 </option>
