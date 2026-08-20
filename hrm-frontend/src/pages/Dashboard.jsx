@@ -46,6 +46,8 @@ function Dashboard() {
 
     const isAdminOrHR = ["Admin", "HR"].includes(user?.role);
     const isManager = user?.role === "Manager";
+    const isStaff = isAdminOrHR || isManager;
+    const staffOnlyPath = isStaff ? "/employees" : "/profile";
 
     return (
         <div className="page-container">
@@ -64,7 +66,7 @@ function Dashboard() {
             </div>
 
             <div className="stats-grid">
-                <div className="stat-card">
+                <Link to={staffOnlyPath} className="stat-card" style={{ textDecoration: "none", color: "inherit" }}>
                     <div className="stat-icon">
                         <Users size={28} strokeWidth={2.2} />
                     </div>
@@ -72,8 +74,8 @@ function Dashboard() {
                         <h3>{stats.totalEmployees}</h3>
                         <p>Total Employees</p>
                     </div>
-                </div>
-                <div className="stat-card">
+                </Link>
+                <Link to={staffOnlyPath} className="stat-card" style={{ textDecoration: "none", color: "inherit" }}>
                     <div className="stat-icon">
                         <Building2 size={28} strokeWidth={2.2} />
                     </div>
@@ -81,8 +83,8 @@ function Dashboard() {
                         <h3>{stats.totalDepartments}</h3>
                         <p>Departments</p>
                     </div>
-                </div>
-                <div className="stat-card">
+                </Link>
+                <Link to="/leaves" className="stat-card" style={{ textDecoration: "none", color: "inherit" }}>
                     <div className="stat-icon">
                         <ClipboardList size={28} strokeWidth={2.2} />
                     </div>
@@ -91,8 +93,8 @@ function Dashboard() {
                         <p>Leave Requests</p>
                         <span className="stat-badge pending">{stats.pendingLeaves} Pending</span>
                     </div>
-                </div>
-                <div className="stat-card">
+                </Link>
+                <Link to="/payroll" className="stat-card" style={{ textDecoration: "none", color: "inherit" }}>
                     <div className="stat-icon">
                         <Wallet size={28} strokeWidth={2.2} />
                     </div>
@@ -100,8 +102,8 @@ function Dashboard() {
                         <h3>{stats.totalPayroll}</h3>
                         <p>Payroll Records</p>
                     </div>
-                </div>
-                <div className="stat-card">
+                </Link>
+                <Link to="/performance" className="stat-card" style={{ textDecoration: "none", color: "inherit" }}>
                     <div className="stat-icon">
                         <Star size={28} strokeWidth={2.2} />
                     </div>
@@ -109,7 +111,7 @@ function Dashboard() {
                         <h3>{stats.totalReviews}</h3>
                         <p>Performance Reviews</p>
                     </div>
-                </div>
+                </Link>
             </div>
 
             <div className="attendance-summary">

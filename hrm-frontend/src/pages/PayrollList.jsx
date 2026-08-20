@@ -61,7 +61,9 @@ function PayrollList() {
                     <tbody>
                         {payroll.length === 0 ? (
                             <tr>
-                                <td colSpan="8" className="empty-row">No payroll records found</td>
+                                <td colSpan="8" className="empty-row">
+                                    No payroll records found. {canManage && <Link to="/payroll/create">Create the first payroll record</Link>}
+                                </td>
                             </tr>
                         ) : (
                             payroll.map((p) => (

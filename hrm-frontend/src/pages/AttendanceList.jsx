@@ -61,7 +61,9 @@ function AttendanceList() {
                     <tbody>
                         {attendance.length === 0 ? (
                             <tr>
-                                <td colSpan="8" className="empty-row">No attendance records found</td>
+                                <td colSpan="8" className="empty-row">
+                                    No attendance records found. {canManageAttendance && <Link to="/attendance/bulk">Record today’s attendance</Link>}
+                                </td>
                             </tr>
                         ) : (
                             attendance.map((att) => (

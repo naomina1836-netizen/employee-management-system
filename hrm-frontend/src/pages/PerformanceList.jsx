@@ -61,7 +61,9 @@ function PerformanceList() {
                     <tbody>
                         {reviews.length === 0 ? (
                             <tr>
-                                <td colSpan="8" className="empty-row">No performance reviews found</td>
+                                <td colSpan="8" className="empty-row">
+                                    No performance reviews found. {canManage && <Link to="/performance/create">Create the first review</Link>}
+                                </td>
                             </tr>
                         ) : (
                             reviews.map((review) => (

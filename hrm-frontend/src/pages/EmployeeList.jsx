@@ -161,7 +161,9 @@ function EmployeeList() {
                     <tbody>
                         {employees.length === 0 ? (
                             <tr>
-                                <td colSpan="7" className="empty-row">No employees found</td>
+                                <td colSpan="7" className="empty-row">
+                                    No employees found. {canManageEmployees && <Link to="/employees/create">Add the first employee</Link>}
+                                </td>
                             </tr>
                         ) : (
                             employees.map((emp) => (
