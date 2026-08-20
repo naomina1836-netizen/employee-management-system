@@ -194,12 +194,34 @@ exports.register = async (req, res) => {
             return res.status(400).json({ message: "Username or email already exists" });
         }
 
+        let linkedEmployeeId = employee_id || null;
+
+        // Employee onboarding can start from either side: use the matching
+        // employee profile when no explicit employee id was supplied.
+        if (!linkedEmployeeId) {
+            const [employees] = await db.query(
+                "SELECT employee_id FROM employees WHERE email = ?",
+                [email]
+            );
+            linkedEmployeeId = employees[0]?.employee_id || null;
+        }
+
+        if (linkedEmployeeId) {
+            const [linkedUsers] = await db.query(
+                "SELECT user_id FROM users WHERE employee_id = ?",
+                [linkedEmployeeId]
+            );
+            if (linkedUsers.length > 0) {
+                return res.status(400).json({ message: "This employee already has a user account" });
+            }
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const [result] = await db.query(
             `INSERT INTO users (username, email, password, role, employee_id, status) 
              VALUES (?, ?, ?, ?, ?, 'Active')`,
-            [username, email, hashedPassword, role || "Employee", employee_id || null]
+            [username, email, hashedPassword, role || "Employee", linkedEmployeeId]
         );
 
         res.status(201).json({

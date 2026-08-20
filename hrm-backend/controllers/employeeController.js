@@ -6,11 +6,13 @@ exports.getAll = async (req, res) => {
             `SELECT e.*, 
                     d.department_name,
                     p.title as position_title,
-                    CONCAT(m.first_name, ' ', m.last_name) as manager_name
+                    CONCAT(m.first_name, ' ', m.last_name) as manager_name,
+                    u.role as user_role
              FROM employees e
              LEFT JOIN departments d ON e.department_id = d.department_id
              LEFT JOIN positions p ON e.position_id = p.position_id
              LEFT JOIN employees m ON e.manager_id = m.employee_id
+             LEFT JOIN users u ON u.employee_id = e.employee_id
              ORDER BY e.employee_id DESC`
         );
 
@@ -30,11 +32,13 @@ exports.getOne = async (req, res) => {
             `SELECT e.*, 
                     d.department_name,
                     p.title as position_title,
-                    CONCAT(m.first_name, ' ', m.last_name) as manager_name
+                    CONCAT(m.first_name, ' ', m.last_name) as manager_name,
+                    u.role as user_role
              FROM employees e
              LEFT JOIN departments d ON e.department_id = d.department_id
              LEFT JOIN positions p ON e.position_id = p.position_id
              LEFT JOIN employees m ON e.manager_id = m.employee_id
+             LEFT JOIN users u ON u.employee_id = e.employee_id
              WHERE e.employee_id = ?`,
             [id]
         );
@@ -93,9 +97,18 @@ exports.create = async (req, res) => {
             [req.user.user_id, result.insertId]
         );
 
+        // If an account was created before its employee profile, connect it now.
+        const [linkResult] = await db.query(
+            `UPDATE users
+             SET employee_id = ?
+             WHERE email = ? AND employee_id IS NULL`,
+            [result.insertId, email]
+        );
+
         res.status(201).json({
             message: "Employee created successfully",
-            employee_id: result.insertId
+            employee_id: result.insertId,
+            account_linked: linkResult.affectedRows > 0
         });
 
     } catch (error) {
@@ -148,6 +161,12 @@ exports.update = async (req, res) => {
                 manager_id || null, employment_status || "Active",
                 id
             ]
+        );
+
+        // Keep a linked login account aligned with the employee's email.
+        await db.query(
+            "UPDATE users SET email = ? WHERE employee_id = ?",
+            [email, id]
         );
 
         await db.query(
@@ -233,11 +252,13 @@ exports.search = async (req, res) => {
             SELECT e.*, 
                     d.department_name,
                     p.title as position_title,
-                    CONCAT(m.first_name, ' ', m.last_name) as manager_name
+                    CONCAT(m.first_name, ' ', m.last_name) as manager_name,
+                    u.role as user_role
             FROM employees e
             LEFT JOIN departments d ON e.department_id = d.department_id
             LEFT JOIN positions p ON e.position_id = p.position_id
             LEFT JOIN employees m ON e.manager_id = m.employee_id
+            LEFT JOIN users u ON u.employee_id = e.employee_id
             WHERE 1=1
         `;
         
