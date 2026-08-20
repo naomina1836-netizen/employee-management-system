@@ -10,7 +10,7 @@ router.get("/stats", authenticate, authorize("Admin", "HR", "Manager"), leaveCon
 router.get("/types", authenticate, leaveController.getLeaveTypes);
 router.get("/employee/:employeeId", authenticate, leaveController.getByEmployee);
 router.get("/", authenticate, authorize("Admin", "HR", "Manager"), leaveController.getAll);
-router.post("/", authenticate, authorize("Admin", "HR", "Employee"), validateLeave, leaveController.create);
+router.post("/", authenticate, authorize("Admin", "HR", "Manager", "Employee"), validateLeave, leaveController.create);
 router.patch("/:id/status", authenticate, authorize("Admin", "HR", "Manager"), leaveController.updateStatus);
 router.delete("/:id", authenticate, authorize("Admin", "HR"), leaveController.delete);
 
