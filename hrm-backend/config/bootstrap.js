@@ -76,7 +76,7 @@ async function seedDefaultAdmin(connection) {
 
     if (Number(tables[0].count) === 0) {
       console.log("users table does not exist. Skipping admin seed.");
-      return;
+      return false;
     }
 
     const [users] = await connection.query(
@@ -85,10 +85,18 @@ async function seedDefaultAdmin(connection) {
 
     if (Number(users[0].count) > 0) {
       console.log("Users already exist. Admin seed skipped.");
-      return;
+      return false;
     }
 
-    const password = process.env.ADMIN_PASSWORD || "admin123";
+    const password = process.env.ADMIN_PASSWORD;
+
+    if (!password) {
+      console.warn(
+        "ADMIN_PASSWORD is not set. No default admin was created. Set it before starting with an empty database."
+      );
+      return false;
+    }
+
     const passwordHash = await bcrypt.hash(password, 10);
 
     await connection.query(
@@ -108,8 +116,10 @@ async function seedDefaultAdmin(connection) {
     );
 
     console.log("Default admin created.");
+    return true;
   } catch (error) {
     console.log("Admin seed skipped:", error.message);
+    return false;
   }
 }
 
@@ -131,18 +141,21 @@ async function ensureDatabaseSchema() {
 
     const hasTables = await databaseHasTables(connection);
 
+    let seededSchema = false;
+
     if (!hasTables) {
       console.log("No tables found. Running schema.sql...");
       await runSchema(connection);
+      seededSchema = true;
     } else {
       console.log("Database tables already exist.");
     }
 
-    await seedDefaultAdmin(connection);
+    const seededAdmin = await seedDefaultAdmin(connection);
 
     console.log("Database initialization completed.");
 
-    return true;
+    return { seededSchema, seededAdmin };
   } catch (error) {
     console.error("Failed to initialize database:");
     console.error(error);

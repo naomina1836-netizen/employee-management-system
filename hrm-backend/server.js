@@ -91,8 +91,10 @@ async function startServer() {
 
         if (bootstrapResult.seededSchema) {
             console.log("Database schema initialized from database/schema.sql");
-        } else if (bootstrapResult.seededAdmin) {
-            console.log("Demo admin user seeded: admin@hrm.com / password123");
+        }
+
+        if (bootstrapResult.seededAdmin) {
+            console.log("Default admin user seeded. Use the ADMIN_PASSWORD configured in your environment.");
         }
 
         app.listen(PORT, () => {
