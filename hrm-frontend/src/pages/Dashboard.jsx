@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
 import {
     Building2,
     ClipboardList,
@@ -10,6 +12,7 @@ import {
 } from "lucide-react";
 
 function Dashboard() {
+    const { user } = useAuth();
     const [stats, setStats] = useState({
         totalEmployees: 0,
         totalDepartments: 0,
@@ -41,10 +44,23 @@ function Dashboard() {
         return <div className="loading-container">Loading dashboard...</div>;
     }
 
+    const isAdminOrHR = ["Admin", "HR"].includes(user?.role);
+    const isManager = user?.role === "Manager";
+
     return (
         <div className="page-container">
             <div className="page-header">
-                <h1>Dashboard</h1>
+                <div>
+                    <h1>Dashboard</h1>
+                    <p>Welcome back, {user?.username}. Choose an action to continue.</p>
+                </div>
+                <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                    {isAdminOrHR && <Link to="/employees/create" className="btn-primary">Add Employee</Link>}
+                    {isAdminOrHR && <Link to="/attendance/bulk" className="btn-secondary">Record Attendance</Link>}
+                    {isManager && <Link to="/leaves" className="btn-primary">Review Leave</Link>}
+                    {!isAdminOrHR && !isManager && <Link to="/attendance/self" className="btn-primary">My Attendance</Link>}
+                    {!isAdminOrHR && !isManager && <Link to="/leaves/create" className="btn-secondary">Request Leave</Link>}
+                </div>
             </div>
 
             <div className="stats-grid">

@@ -46,6 +46,10 @@ function App() {
     }
 
     const isAdminOrHR = user.role === "Admin" || user.role === "HR";
+    const isStaff = ["Admin", "HR", "Manager"].includes(user.role);
+    const canManageAttendance = isAdminOrHR;
+    const canManagePayroll = isAdminOrHR;
+    const canManagePerformance = isStaff;
 
     return (
         <Routes>
@@ -53,31 +57,32 @@ function App() {
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="profile" element={<Profile />} />
-                <Route path="employees" element={<EmployeeList />} />
-                <Route path="employees/create" element={<CreateEmployee />} />
-                <Route path="employees/edit/:id" element={<EditEmployee />} />
-                <Route path="employees/:id" element={<EmployeeDetails />} />
+                <Route path="employees" element={isStaff ? <EmployeeList /> : <Navigate to="/dashboard" replace />} />
+                <Route path="employees/create" element={isAdminOrHR ? <CreateEmployee /> : <Navigate to="/employees" replace />} />
+                <Route path="employees/edit/:id" element={isAdminOrHR ? <EditEmployee /> : <Navigate to="/employees" replace />} />
+                <Route path="employees/:id" element={isStaff ? <EmployeeDetails /> : <Navigate to="/dashboard" replace />} />
                 <Route path="leaves" element={<LeaveList />} />
                 <Route path="leaves/create" element={<CreateLeave />} />
-                <Route path="attendance" element={<AttendanceList />} />
-                <Route path="attendance/create" element={<CreateAttendance />} />
-                <Route path="attendance/bulk" element={<BulkAttendance />} />
+                <Route path="attendance" element={isStaff ? <AttendanceList /> : <Navigate to="/attendance/self" replace />} />
+                <Route path="attendance/create" element={canManageAttendance ? <CreateAttendance /> : <Navigate to="/attendance" replace />} />
+                <Route path="attendance/bulk" element={canManageAttendance ? <BulkAttendance /> : <Navigate to="/attendance" replace />} />
                 <Route path="attendance/self" element={<AttendanceSelf />} />
-                <Route path="attendance/:id" element={<AttendanceDetails />} />
-                <Route path="attendance/edit/:id" element={<EditAttendance />} />
+                <Route path="attendance/:id" element={isStaff ? <AttendanceDetails /> : <Navigate to="/attendance/self" replace />} />
+                <Route path="attendance/edit/:id" element={canManageAttendance ? <EditAttendance /> : <Navigate to="/attendance" replace />} />
                 <Route path="payroll" element={<PayrollList />} />
-                <Route path="payroll/create" element={<CreatePayroll />} />
-                <Route path="payroll/:id" element={<PayrollDetails />} />
-                <Route path="payroll/edit/:id" element={<EditPayroll />} />
+                <Route path="payroll/create" element={canManagePayroll ? <CreatePayroll /> : <Navigate to="/payroll" replace />} />
+                <Route path="payroll/:id" element={isStaff ? <PayrollDetails /> : <Navigate to="/payroll" replace />} />
+                <Route path="payroll/edit/:id" element={canManagePayroll ? <EditPayroll /> : <Navigate to="/payroll" replace />} />
                 <Route path="performance" element={<PerformanceList />} />
-                <Route path="performance/create" element={<CreatePerformance />} />
-                <Route path="performance/:id" element={<PerformanceDetails />} />
-                <Route path="performance/edit/:id" element={<EditPerformance />} />
+                <Route path="performance/create" element={canManagePerformance ? <CreatePerformance /> : <Navigate to="/performance" replace />} />
+                <Route path="performance/:id" element={isStaff ? <PerformanceDetails /> : <Navigate to="/performance" replace />} />
+                <Route path="performance/edit/:id" element={canManagePerformance ? <EditPerformance /> : <Navigate to="/performance" replace />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="reports" element={<Reports />} />
                 {isAdminOrHR && (
                     <Route path="admin/users" element={<AdminUsers />} />
                 )}
+                {!isAdminOrHR && <Route path="admin/users" element={<Navigate to="/dashboard" replace />} />}
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
             <Route path="/login" element={<Navigate to="/dashboard" replace />} />
