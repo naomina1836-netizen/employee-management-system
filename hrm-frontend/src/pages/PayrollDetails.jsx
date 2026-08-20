@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
 
 function formatMoney(value) {
     const number = Number(value);
@@ -12,6 +13,9 @@ function formatMoney(value) {
 function PayrollDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const canEdit = ["Admin", "HR"].includes(user?.role);
+    const canDelete = user?.role === "Admin";
     const [payroll, setPayroll] = useState(null);
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState(false);
@@ -66,15 +70,15 @@ function PayrollDetails() {
                     <p>{payroll.employee_name}</p>
                 </div>
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                    <Link to={`/payroll/edit/${payroll.payroll_id}`} className="btn-primary">
+                    {canEdit && <Link to={`/payroll/edit/${payroll.payroll_id}`} className="btn-primary">
                         Edit Payroll
-                    </Link>
+                    </Link>}
                     <button className="btn-secondary" onClick={() => navigate("/payroll")}>
                         Back to List
                     </button>
-                    <button className="btn-secondary" onClick={handleDelete} disabled={deleting}>
+                    {canDelete && <button className="btn-secondary" onClick={handleDelete} disabled={deleting}>
                         {deleting ? "Deleting..." : "Delete"}
-                    </button>
+                    </button>}
                 </div>
             </div>
 
