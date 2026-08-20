@@ -12,7 +12,7 @@ const DB_NAME = process.env.DB_NAME || "hrm_db";
 async function createSetupConnection() {
   console.log("BOOTSTRAP DB CONFIG:", {
     host: process.env.DB_HOST || "127.0.0.1",
-    port: process.env.DB_PORT || "3307",
+    port: process.env.DB_PORT || "3306",
     user: process.env.DB_USER || "root",
     passwordLength: (process.env.DB_PASSWORD || "").length,
     database: DB_NAME,
@@ -20,7 +20,7 @@ async function createSetupConnection() {
 
   return mysql.createConnection({
     host: process.env.DB_HOST || "127.0.0.1",
-    port: Number(process.env.DB_PORT || 3307),
+    port: Number(process.env.DB_PORT || 3306),
     user: process.env.DB_USER || "root",
     password: process.env.DB_PASSWORD || "",
     multipleStatements: true,
