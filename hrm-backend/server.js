@@ -6,17 +6,25 @@ const app = express();
 const { apiLimiter } = require("./middleware/rateLimiter");
 
 // CORS Configuration
-const corsOrigins = (process.env.CORS_ORIGINS || "http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:5175,http://127.0.0.1:3000,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:5175")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-
-app.use(cors({
-    origin: corsOrigins,
+const corsOptions = {
+    origin: [
+        "http://localhost:5174",
+        "http://localhost:5173",
+        "http://localhost:5175",
+        "http://localhost:3000",
+        "http://127.0.0.1:5174",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5175",
+        "http://127.0.0.1:3000",
+    ],
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization"]
-}));
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
