@@ -4,6 +4,7 @@ import api from "../services/api";
 import toast from "react-hot-toast";
 import SearchBar from "../components/SearchBar";
 import FilterBar from "../components/FilterBar";
+import { useAuth } from "../context/AuthContext";
 
 function EmployeeList() {
     const [employees, setEmployees] = useState([]);
@@ -13,6 +14,8 @@ function EmployeeList() {
     const [positions, setPositions] = useState([]);
     const [searchVersion, setSearchVersion] = useState(0);
     const [filterVersion, setFilterVersion] = useState(0);
+    const { user } = useAuth();
+    const canManageEmployees = ["Admin", "HR"].includes(user?.role);
 
     useEffect(() => {
         loadLookupData();
@@ -125,9 +128,9 @@ function EmployeeList() {
                     <button type="button" className="btn-secondary" onClick={clearFilters}>
                         Clear Filters
                     </button>
-                    <Link to="/employees/create" className="btn-primary">
+                    {canManageEmployees && <Link to="/employees/create" className="btn-primary">
                         Add Employee
-                    </Link>
+                    </Link>}
                 </div>
             </div>
 
@@ -158,7 +161,9 @@ function EmployeeList() {
                     <tbody>
                         {employees.length === 0 ? (
                             <tr>
-                                <td colSpan="7" className="empty-row">No employees found</td>
+                                <td colSpan="7" className="empty-row">
+                                    No employees found. {canManageEmployees && <Link to="/employees/create">Add the first employee</Link>}
+                                </td>
                             </tr>
                         ) : (
                             employees.map((emp) => (
@@ -175,7 +180,7 @@ function EmployeeList() {
                                     </td>
                                     <td>
                                         <Link to={`/employees/${emp.employee_id}`} className="btn-sm">View</Link>
-                                        <Link to={`/employees/edit/${emp.employee_id}`} className="btn-sm btn-edit">Edit</Link>
+                                        {canManageEmployees && <Link to={`/employees/edit/${emp.employee_id}`} className="btn-sm btn-edit">Edit</Link>}
                                     </td>
                                 </tr>
                             ))

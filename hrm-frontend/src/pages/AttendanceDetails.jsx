@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
 
 function formatDate(value) {
     if (!value) return "-";
@@ -13,6 +14,8 @@ function formatDate(value) {
 function AttendanceDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const canManage = ["Admin", "HR"].includes(user?.role);
     const [attendance, setAttendance] = useState(null);
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState(false);
@@ -67,15 +70,15 @@ function AttendanceDetails() {
                     <p>{attendance.employee_name}</p>
                 </div>
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                    <Link to={`/attendance/edit/${attendance.attendance_id}`} className="btn-primary">
+                    {canManage && <Link to={`/attendance/edit/${attendance.attendance_id}`} className="btn-primary">
                         Edit Attendance
-                    </Link>
+                    </Link>}
                     <button className="btn-secondary" onClick={() => navigate("/attendance")}>
                         Back to List
                     </button>
-                    <button className="btn-secondary" onClick={handleDelete} disabled={deleting}>
+                    {canManage && <button className="btn-secondary" onClick={handleDelete} disabled={deleting}>
                         {deleting ? "Deleting..." : "Delete"}
-                    </button>
+                    </button>}
                 </div>
             </div>
 

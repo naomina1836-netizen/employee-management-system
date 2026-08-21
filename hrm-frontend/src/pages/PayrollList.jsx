@@ -2,18 +2,26 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
 
 function PayrollList() {
     const [payroll, setPayroll] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { user } = useAuth();
+    const canManage = ["Admin", "HR"].includes(user?.role);
 
     useEffect(() => {
         loadPayroll();
-    }, []);
+    }, [user]);
 
     async function loadPayroll() {
         try {
-            const response = await api.get("/payroll");
+            if (user?.role === "Employee" && !user.employee_id) {
+                setPayroll([]);
+                return;
+            }
+            const endpoint = user?.role === "Employee" ? `/payroll/employee/${user.employee_id}` : "/payroll";
+            const response = await api.get(endpoint);
             setPayroll(response.data);
         } catch (error) {
             console.error("Error loading payroll:", error);
@@ -31,9 +39,9 @@ function PayrollList() {
         <div className="page-container">
             <div className="page-header">
                 <h1>Payroll</h1>
-                <Link to="/payroll/create" className="btn-primary">
+                {canManage && <Link to="/payroll/create" className="btn-primary">
                     Add Payroll
-                </Link>
+                </Link>}
             </div>
 
             <div className="table-container">
@@ -53,7 +61,9 @@ function PayrollList() {
                     <tbody>
                         {payroll.length === 0 ? (
                             <tr>
-                                <td colSpan="8" className="empty-row">No payroll records found</td>
+                                <td colSpan="8" className="empty-row">
+                                    No payroll records found. {canManage && <Link to="/payroll/create">Create the first payroll record</Link>}
+                                </td>
                             </tr>
                         ) : (
                             payroll.map((p) => (
@@ -66,8 +76,8 @@ function PayrollList() {
                                     <td>ETB {parseFloat(p.allowance).toLocaleString()}</td>
                                     <td><strong>ETB {parseFloat(p.net_salary).toLocaleString()}</strong></td>
                                     <td>
-                                        <Link to={`/payroll/${p.payroll_id}`} className="btn-sm">View</Link>
-                                        <Link to={`/payroll/edit/${p.payroll_id}`} className="btn-sm btn-edit">Edit</Link>
+                                        {user?.role !== "Employee" && <Link to={`/payroll/${p.payroll_id}`} className="btn-sm">View</Link>}
+                                        {canManage && <Link to={`/payroll/edit/${p.payroll_id}`} className="btn-sm btn-edit">Edit</Link>}
                                     </td>
                                 </tr>
                             ))

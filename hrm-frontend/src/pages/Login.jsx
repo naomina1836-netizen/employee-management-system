@@ -32,7 +32,10 @@ function Login() {
             toast.success("Welcome back!");
             navigate("/dashboard");
         } catch (err) {
-            const message = err.response?.data?.message || "Invalid credentials. Please try again.";
+            const message = err.response?.data?.message
+                || (err.request
+                    ? "Cannot reach the HRM server. Confirm it is running on port 5001."
+                    : "Unable to sign in. Please try again.");
             setError(message);
             toast.error(message);
         } finally {

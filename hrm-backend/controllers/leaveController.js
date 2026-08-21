@@ -26,6 +26,11 @@ exports.getByEmployee = async (req, res) => {
     try {
         const { employeeId } = req.params;
 
+        if (req.user.role === "Employee" &&
+            (!req.user.employee_id || Number(employeeId) !== Number(req.user.employee_id))) {
+            return res.status(403).json({ message: "You can only view your own leave requests" });
+        }
+
         const [leaves] = await db.query(
             `SELECT l.*, 
                     lt.leave_name,
@@ -54,6 +59,10 @@ exports.create = async (req, res) => {
             return res.status(400).json({ message: "Employee, leave type, start date, and end date are required" });
         }
 
+        if (["Employee", "Manager"].includes(req.user.role) && Number(req.user.employee_id) !== Number(employee_id)) {
+            return res.status(403).json({ message: "You can only submit leave for your own employee profile" });
+        }
+
         const start = new Date(start_date);
         const end = new Date(end_date);
         const diffTime = Math.abs(end - start);
@@ -66,11 +75,13 @@ exports.create = async (req, res) => {
             [employee_id, leave_type_id, start_date, end_date, total_days, reason || null]
         );
 
+        // Notify the employee's manager and HR/Admin approvers.
         await db.query(
-            `INSERT INTO notifications (user_id, title, message) 
-             VALUES ((SELECT user_id FROM users WHERE employee_id = ?), 
-                     'New Leave Request', 
-                     'Leave request submitted for approval')`,
+            `INSERT INTO notifications (user_id, title, message)
+             SELECT u.user_id, 'New Leave Request', 'A leave request is awaiting review'
+             FROM users u
+             WHERE u.role IN ('Admin', 'HR')
+                OR u.employee_id = (SELECT manager_id FROM employees WHERE employee_id = ?)` ,
             [employee_id]
         );
 
@@ -88,14 +99,17 @@ exports.create = async (req, res) => {
 exports.updateStatus = async (req, res) => {
     try {
         const { id } = req.params;
-        const { status, approved_by } = req.body;
+        const { status } = req.body;
 
-        if (!status) {
-            return res.status(400).json({ message: "Status is required" });
+        if (!['Approved', 'Rejected'].includes(status)) {
+            return res.status(400).json({ message: "Status must be Approved or Rejected" });
         }
 
         const [existing] = await db.query(
-            "SELECT * FROM leave_requests WHERE leave_id = ?",
+            `SELECT l.*, e.manager_id
+             FROM leave_requests l
+             JOIN employees e ON e.employee_id = l.employee_id
+             WHERE l.leave_id = ?`,
             [id]
         );
 
@@ -103,19 +117,22 @@ exports.updateStatus = async (req, res) => {
             return res.status(404).json({ message: "Leave request not found" });
         }
 
+        if (req.user.role === "Manager" && Number(existing[0].manager_id) !== Number(req.user.employee_id)) {
+            return res.status(403).json({ message: "Managers can only review leave requests from their direct reports" });
+        }
+
         await db.query(
             `UPDATE leave_requests 
              SET status = ?, approved_by = ?
              WHERE leave_id = ?`,
-            [status, approved_by || null, id]
+            [status, req.user.employee_id || null, id]
         );
 
         await db.query(
-            `INSERT INTO notifications (user_id, title, message) 
-             VALUES ((SELECT user_id FROM users WHERE employee_id = ?), 
-                     'Leave Request Updated', 
-                     CONCAT('Your leave request has been ', ?))`,
-            [existing[0].employee_id, status]
+            `INSERT INTO notifications (user_id, title, message)
+             SELECT user_id, 'Leave Request Updated', CONCAT('Your leave request has been ', ?)
+             FROM users WHERE employee_id = ?`,
+            [status, existing[0].employee_id]
         );
 
         res.json({ message: "Leave request status updated successfully" });

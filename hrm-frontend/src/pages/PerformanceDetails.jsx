@@ -2,10 +2,14 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
 
 function PerformanceDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const canEdit = ["Admin", "HR", "Manager"].includes(user?.role);
+    const canDelete = ["Admin", "HR"].includes(user?.role);
     const [review, setReview] = useState(null);
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState(false);
@@ -68,15 +72,15 @@ function PerformanceDetails() {
                     <p>{review.employee_name}</p>
                 </div>
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                    <Link to={`/performance/edit/${review.review_id}`} className="btn-primary">
+                    {canEdit && <Link to={`/performance/edit/${review.review_id}`} className="btn-primary">
                         Edit Review
-                    </Link>
+                    </Link>}
                     <button className="btn-secondary" onClick={() => navigate("/performance")}>
                         Back to List
                     </button>
-                    <button className="btn-secondary" onClick={handleDelete} disabled={deleting}>
+                    {canDelete && <button className="btn-secondary" onClick={handleDelete} disabled={deleting}>
                         {deleting ? "Deleting..." : "Delete"}
-                    </button>
+                    </button>}
                 </div>
             </div>
 

@@ -2,6 +2,69 @@ const db = require("../config/db");
 
 exports.getStats = async (req, res) => {
     try {
+        const isEmployee = req.user.role === "Employee";
+        const isManager = req.user.role === "Manager";
+        const employeeId = req.user.employee_id;
+
+        if ((isEmployee || isManager) && !employeeId) {
+            return res.status(400).json({ message: "No employee profile is linked to this user" });
+        }
+
+        if (isEmployee) {
+            const [[employeeCount], [departmentCount], [leaveCount], [pendingLeaves], [payrollCount], [reviewCount], [todayAttendance]] = await Promise.all([
+                db.query("SELECT COUNT(*) AS total FROM employees WHERE employee_id = ?", [employeeId]),
+                db.query("SELECT COUNT(DISTINCT department_id) AS total FROM employees WHERE employee_id = ?", [employeeId]),
+                db.query("SELECT COUNT(*) AS total FROM leave_requests WHERE employee_id = ?", [employeeId]),
+                db.query("SELECT COUNT(*) AS total FROM leave_requests WHERE employee_id = ? AND status = 'Pending'", [employeeId]),
+                db.query("SELECT COUNT(*) AS total FROM payroll WHERE employee_id = ?", [employeeId]),
+                db.query("SELECT COUNT(*) AS total FROM performance_reviews WHERE employee_id = ?", [employeeId]),
+                db.query(`SELECT COUNT(*) AS total,
+                    COALESCE(SUM(status = 'Present'), 0) AS present,
+                    COALESCE(SUM(status = 'Absent'), 0) AS absent,
+                    COALESCE(SUM(status = 'Late'), 0) AS late
+                    FROM attendance WHERE employee_id = ? AND attendance_date = CURDATE()`, [employeeId])
+            ]);
+
+            return res.json({
+                scope: "personal",
+                totalEmployees: employeeCount[0].total,
+                totalDepartments: departmentCount[0].total,
+                totalLeaves: leaveCount[0].total,
+                pendingLeaves: pendingLeaves[0].total,
+                totalPayroll: payrollCount[0].total,
+                totalReviews: reviewCount[0].total,
+                todayAttendance: todayAttendance[0]
+            });
+        }
+
+        if (isManager) {
+            const [[employeeCount], [departmentCount], [leaveCount], [pendingLeaves], [payrollCount], [reviewCount], [todayAttendance]] = await Promise.all([
+                db.query("SELECT COUNT(*) AS total FROM employees WHERE manager_id = ? AND employment_status = 'Active'", [employeeId]),
+                db.query("SELECT COUNT(DISTINCT department_id) AS total FROM employees WHERE manager_id = ?", [employeeId]),
+                db.query(`SELECT COUNT(*) AS total FROM leave_requests l JOIN employees e ON e.employee_id = l.employee_id WHERE e.manager_id = ?`, [employeeId]),
+                db.query(`SELECT COUNT(*) AS total FROM leave_requests l JOIN employees e ON e.employee_id = l.employee_id WHERE e.manager_id = ? AND l.status = 'Pending'`, [employeeId]),
+                db.query(`SELECT COUNT(*) AS total FROM payroll p JOIN employees e ON e.employee_id = p.employee_id WHERE e.manager_id = ?`, [employeeId]),
+                db.query(`SELECT COUNT(*) AS total FROM performance_reviews r JOIN employees e ON e.employee_id = r.employee_id WHERE e.manager_id = ?`, [employeeId]),
+                db.query(`SELECT COUNT(*) AS total,
+                    COALESCE(SUM(a.status = 'Present'), 0) AS present,
+                    COALESCE(SUM(a.status = 'Absent'), 0) AS absent,
+                    COALESCE(SUM(a.status = 'Late'), 0) AS late
+                    FROM attendance a JOIN employees e ON e.employee_id = a.employee_id
+                    WHERE e.manager_id = ? AND a.attendance_date = CURDATE()`, [employeeId])
+            ]);
+
+            return res.json({
+                scope: "team",
+                totalEmployees: employeeCount[0].total,
+                totalDepartments: departmentCount[0].total,
+                totalLeaves: leaveCount[0].total,
+                pendingLeaves: pendingLeaves[0].total,
+                totalPayroll: payrollCount[0].total,
+                totalReviews: reviewCount[0].total,
+                todayAttendance: todayAttendance[0]
+            });
+        }
+
         const [employeeCount] = await db.query(
             "SELECT COUNT(*) as total FROM employees WHERE employment_status = 'Active'"
         );
@@ -37,6 +100,7 @@ exports.getStats = async (req, res) => {
         );
 
         res.json({
+            scope: "organization",
             totalEmployees: employeeCount[0].total || 0,
             totalDepartments: departmentCount[0].total || 0,
             totalLeaves: leaveCount[0].total || 0,

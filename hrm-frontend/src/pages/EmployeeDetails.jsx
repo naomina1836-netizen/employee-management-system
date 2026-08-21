@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
 
 function formatDate(value) {
     if (!value) return "-";
@@ -13,6 +14,8 @@ function formatDate(value) {
 function EmployeeDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const canEdit = ["Admin", "HR"].includes(user?.role);
     const [employee, setEmployee] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -50,9 +53,9 @@ function EmployeeDetails() {
                     <p>Employee #{employee.employee_id}</p>
                 </div>
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                    <Link to={`/employees/edit/${employee.employee_id}`} className="btn-primary">
+                    {canEdit && <Link to={`/employees/edit/${employee.employee_id}`} className="btn-primary">
                         Edit Employee
-                    </Link>
+                    </Link>}
                     <button className="btn-secondary" onClick={() => navigate("/employees")}>
                         Back to List
                     </button>
