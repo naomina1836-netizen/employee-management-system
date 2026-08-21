@@ -49,12 +49,12 @@ function Dashboard() {
     const isStaff = isAdminOrHR || isManager;
     const staffOnlyPath = isStaff ? "/employees" : "/profile";
     const isPersonal = stats.scope === "personal";
-    const isTeam = stats.scope === "team";
-    const employeeLabel = isPersonal ? "My Profile" : isTeam ? "Team Members" : "Total Employees";
-    const departmentLabel = isPersonal ? "My Department" : isTeam ? "Team Departments" : "Departments";
-    const leaveLabel = isPersonal ? "My Leave Requests" : isTeam ? "Team Leave Requests" : "Leave Requests";
-    const payrollLabel = isPersonal ? "My Payroll Records" : isTeam ? "Team Payroll Records" : "Payroll Records";
-    const reviewLabel = isPersonal ? "My Performance Reviews" : isTeam ? "Team Performance Reviews" : "Performance Reviews";
+    const isDepartment = stats.scope === "department";
+    const employeeLabel = isPersonal ? "My Profile" : isDepartment ? "Department Members" : "Total Employees";
+    const departmentLabel = isPersonal ? "My Department" : isDepartment ? "My Department" : "Departments";
+    const leaveLabel = isPersonal ? "My Leave Requests" : isDepartment ? "Department Leave Requests" : "Leave Requests";
+    const payrollLabel = isPersonal || isDepartment ? "My Payroll Records" : "Payroll Records";
+    const reviewLabel = isPersonal ? "My Performance Reviews" : isDepartment ? "Department Performance Reviews" : "Performance Reviews";
 
     return (
         <div className="page-container">
@@ -122,7 +122,7 @@ function Dashboard() {
             </div>
 
             <div className="attendance-summary">
-                <h2>{isPersonal ? "My Attendance Today" : isTeam ? "Team Attendance Today" : "Today's Attendance"}</h2>
+                <h2>{isPersonal ? "My Attendance Today" : isDepartment ? "Department Attendance Today" : "Today's Attendance"}</h2>
                 <div className="attendance-stats">
                     <div className="attendance-stat present">
                         <span className="count">{stats.todayAttendance?.present || 0}</span>

@@ -1,10 +1,25 @@
 const db = require("../config/db");
 const bcrypt = require("bcryptjs");
+const { getManagerDepartmentId, managerCanAccessEmployee } = require("../utils/departmentAccess");
+
+async function roleForPosition(connection, positionId) {
+    if (!positionId) {
+        return "Employee";
+    }
+
+    const [positions] = await connection.query(
+        "SELECT title FROM positions WHERE position_id = ?",
+        [positionId]
+    );
+
+    return positions[0] && /manager/i.test(positions[0].title)
+        ? "Manager"
+        : "Employee";
+}
 
 exports.getAll = async (req, res) => {
     try {
-        const [employees] = await db.query(
-            `SELECT e.*, 
+        let query = `SELECT e.*,
                     d.department_name,
                     p.title as position_title,
                     CONCAT(m.first_name, ' ', m.last_name) as manager_name,
@@ -13,9 +28,15 @@ exports.getAll = async (req, res) => {
              LEFT JOIN departments d ON e.department_id = d.department_id
              LEFT JOIN positions p ON e.position_id = p.position_id
              LEFT JOIN employees m ON e.manager_id = m.employee_id
-             LEFT JOIN users u ON u.employee_id = e.employee_id
-             ORDER BY e.employee_id DESC`
-        );
+             LEFT JOIN users u ON u.employee_id = e.employee_id`;
+        const params = [];
+        const departmentId = await getManagerDepartmentId(req.user);
+        if (departmentId !== null) {
+            query += " WHERE e.department_id = ?";
+            params.push(departmentId);
+        }
+        query += " ORDER BY e.employee_id DESC";
+        const [employees] = await db.query(query, params);
 
         res.json(employees);
 
@@ -46,6 +67,10 @@ exports.getOne = async (req, res) => {
 
         if (employees.length === 0) {
             return res.status(404).json({ message: "Employee not found" });
+        }
+
+        if (req.user.role === "Manager" && !(await managerCanAccessEmployee(req.user, id))) {
+            return res.status(403).json({ message: "You can only view employees in your department" });
         }
 
         res.json(employees[0]);
@@ -87,6 +112,7 @@ exports.create = async (req, res) => {
             "SELECT user_id, employee_id FROM users WHERE email = ?",
             [email]
         );
+        const accountRole = await roleForPosition(connection, position_id);
 
         if (existingUsers.length > 0 && existingUsers[0].employee_id) {
             await connection.rollback();
@@ -119,8 +145,11 @@ exports.create = async (req, res) => {
 
         if (existingUsers.length > 0) {
             await connection.query(
-                "UPDATE users SET employee_id = ? WHERE user_id = ?",
-                [result.insertId, existingUsers[0].user_id]
+                `UPDATE users
+                 SET employee_id = ?,
+                     role = CASE WHEN role IN ('Employee', 'Manager') THEN ? ELSE role END
+                 WHERE user_id = ?`,
+                [result.insertId, accountRole, existingUsers[0].user_id]
             );
             accountLinked = true;
         } else {
@@ -130,8 +159,8 @@ exports.create = async (req, res) => {
 
             await connection.query(
                 `INSERT INTO users (username, email, password, role, employee_id, status)
-                 VALUES (?, ?, ?, 'Employee', ?, 'Active')`,
-                [username, email, passwordHash, result.insertId]
+                 VALUES (?, ?, ?, ?, ?, 'Active')`,
+                [username, email, passwordHash, accountRole, result.insertId]
             );
             accountCreated = true;
         }
@@ -206,10 +235,15 @@ exports.update = async (req, res) => {
             ]
         );
 
-        // Keep a linked login account aligned with the employee's email.
+        const accountRole = await roleForPosition(db, position_id);
+
+        // Keep a linked login account aligned with the employee's email and position.
         await db.query(
-            "UPDATE users SET email = ? WHERE employee_id = ?",
-            [email, id]
+            `UPDATE users
+             SET email = ?,
+                 role = CASE WHEN role IN ('Employee', 'Manager') THEN ? ELSE role END
+             WHERE employee_id = ?`,
+            [email, accountRole, id]
         );
 
         await db.query(
@@ -306,6 +340,12 @@ exports.search = async (req, res) => {
         `;
         
         const params = [];
+
+        const departmentId = await getManagerDepartmentId(req.user);
+        if (departmentId !== null) {
+            query += " AND e.department_id = ?";
+            params.push(departmentId);
+        }
         
         if (keyword) {
             query += ` AND (e.first_name LIKE ? OR e.last_name LIKE ? OR e.email LIKE ? OR e.phone LIKE ?)`;

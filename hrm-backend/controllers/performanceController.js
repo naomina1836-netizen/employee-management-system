@@ -1,16 +1,23 @@
 const db = require("../config/db");
+const { getManagerDepartmentId, managerCanAccessEmployee } = require("../utils/departmentAccess");
 
 exports.getAll = async (req, res) => {
     try {
-        const [reviews] = await db.query(
-            `SELECT r.*, 
+        let query = `SELECT r.*,
                     CONCAT(e.first_name, ' ', e.last_name) as employee_name,
                     CONCAT(rv.first_name, ' ', rv.last_name) as reviewer_name
              FROM performance_reviews r
              JOIN employees e ON r.employee_id = e.employee_id
              JOIN employees rv ON r.reviewer_id = rv.employee_id
-             ORDER BY r.review_date DESC`
-        );
+             WHERE 1=1`;
+        const params = [];
+        const departmentId = await getManagerDepartmentId(req.user);
+        if (departmentId !== null) {
+            query += " AND e.department_id = ?";
+            params.push(departmentId);
+        }
+        query += " ORDER BY r.review_date DESC";
+        const [reviews] = await db.query(query, params);
 
         res.json(reviews);
 
@@ -27,6 +34,10 @@ exports.getByEmployee = async (req, res) => {
         if (req.user.role === "Employee" &&
             (!req.user.employee_id || Number(employeeId) !== Number(req.user.employee_id))) {
             return res.status(403).json({ message: "You can only view your own performance reviews" });
+        }
+
+        if (req.user.role === "Manager" && !(await managerCanAccessEmployee(req.user, employeeId))) {
+            return res.status(403).json({ message: "You can only view performance reviews for your department" });
         }
 
         const [reviews] = await db.query(
@@ -68,6 +79,10 @@ exports.getOne = async (req, res) => {
             return res.status(404).json({ message: "Review not found" });
         }
 
+        if (req.user.role === "Manager" && !(await managerCanAccessEmployee(req.user, reviews[0].employee_id))) {
+            return res.status(403).json({ message: "You can only view performance reviews for your department" });
+        }
+
         res.json(reviews[0]);
     } catch (error) {
         console.error("Error fetching review:", error);
@@ -87,6 +102,10 @@ exports.create = async (req, res) => {
             return res.status(400).json({ 
                 message: "Employee, reviewer, and review date are required" 
             });
+        }
+
+        if (req.user.role === "Manager" && !(await managerCanAccessEmployee(req.user, employee_id))) {
+            return res.status(403).json({ message: "You can only create performance reviews for your department" });
         }
 
         const scores = [teamwork_score, communication_score, productivity_score, punctuality_score, leadership_score];
@@ -137,6 +156,10 @@ exports.update = async (req, res) => {
 
         if (existing.length === 0) {
             return res.status(404).json({ message: "Review not found" });
+        }
+
+        if (req.user.role === "Manager" && !(await managerCanAccessEmployee(req.user, existing[0].employee_id))) {
+            return res.status(403).json({ message: "You can only update performance reviews for your department" });
         }
 
         const scores = [teamwork_score, communication_score, productivity_score, punctuality_score, leadership_score];
@@ -209,6 +232,12 @@ exports.search = async (req, res) => {
         `;
         
         const params = [];
+
+        const departmentId = await getManagerDepartmentId(req.user);
+        if (departmentId !== null) {
+            query += " AND e.department_id = ?";
+            params.push(departmentId);
+        }
         
         if (keyword) {
             query += ` AND (e.first_name LIKE ? OR e.last_name LIKE ?)`;

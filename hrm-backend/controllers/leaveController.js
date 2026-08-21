@@ -1,9 +1,9 @@
 const db = require("../config/db");
+const { getManagerDepartmentId, managerCanAccessEmployee } = require("../utils/departmentAccess");
 
 exports.getAll = async (req, res) => {
     try {
-        const [leaves] = await db.query(
-            `SELECT l.*, 
+        let query = `SELECT l.*,
                     CONCAT(e.first_name, ' ', e.last_name) as employee_name,
                     lt.leave_name,
                     CONCAT(a.first_name, ' ', a.last_name) as approved_by_name
@@ -11,8 +11,15 @@ exports.getAll = async (req, res) => {
              JOIN employees e ON l.employee_id = e.employee_id
              JOIN leave_types lt ON l.leave_type_id = lt.leave_type_id
              LEFT JOIN employees a ON l.approved_by = a.employee_id
-             ORDER BY l.applied_at DESC`
-        );
+             WHERE 1=1`;
+        const params = [];
+        const departmentId = await getManagerDepartmentId(req.user);
+        if (departmentId !== null) {
+            query += " AND e.department_id = ?";
+            params.push(departmentId);
+        }
+        query += " ORDER BY l.applied_at DESC";
+        const [leaves] = await db.query(query, params);
 
         res.json(leaves);
 
@@ -29,6 +36,10 @@ exports.getByEmployee = async (req, res) => {
         if (req.user.role === "Employee" &&
             (!req.user.employee_id || Number(employeeId) !== Number(req.user.employee_id))) {
             return res.status(403).json({ message: "You can only view your own leave requests" });
+        }
+
+        if (req.user.role === "Manager" && !(await managerCanAccessEmployee(req.user, employeeId))) {
+            return res.status(403).json({ message: "You can only view leave requests from your department" });
         }
 
         const [leaves] = await db.query(
@@ -198,6 +209,12 @@ exports.search = async (req, res) => {
         `;
         
         const params = [];
+
+        const departmentId = await getManagerDepartmentId(req.user);
+        if (departmentId !== null) {
+            query += " AND e.department_id = ?";
+            params.push(departmentId);
+        }
         
         if (keyword) {
             query += ` AND (e.first_name LIKE ? OR e.last_name LIKE ? OR lt.leave_name LIKE ?)`;

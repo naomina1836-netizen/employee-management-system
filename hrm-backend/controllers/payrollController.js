@@ -24,7 +24,7 @@ exports.getByEmployee = async (req, res) => {
     try {
         const { employeeId } = req.params;
 
-        if (req.user.role === "Employee" &&
+        if (["Employee", "Manager"].includes(req.user.role) &&
             (!req.user.employee_id || Number(employeeId) !== Number(req.user.employee_id))) {
             return res.status(403).json({ message: "You can only view your own payroll records" });
         }

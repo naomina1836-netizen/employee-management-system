@@ -1,14 +1,21 @@
 const db = require("../config/db");
+const { getManagerDepartmentId, managerCanAccessEmployee } = require("../utils/departmentAccess");
 
 exports.getAll = async (req, res) => {
     try {
-        const [attendance] = await db.query(
-            `SELECT a.*, 
+        let query = `SELECT a.*,
                     CONCAT(e.first_name, ' ', e.last_name) as employee_name
              FROM attendance a
              JOIN employees e ON a.employee_id = e.employee_id
-             ORDER BY a.attendance_date DESC, a.attendance_id DESC`
-        );
+             WHERE 1=1`;
+        const params = [];
+        const departmentId = await getManagerDepartmentId(req.user);
+        if (departmentId !== null) {
+            query += " AND e.department_id = ?";
+            params.push(departmentId);
+        }
+        query += " ORDER BY a.attendance_date DESC, a.attendance_id DESC";
+        const [attendance] = await db.query(query, params);
 
         res.json(attendance);
 
@@ -25,6 +32,10 @@ exports.getByEmployee = async (req, res) => {
         if (req.user.role === "Employee" &&
             (!req.user.employee_id || Number(employeeId) !== Number(req.user.employee_id))) {
             return res.status(403).json({ message: "You can only view your own attendance records" });
+        }
+
+        if (req.user.role === "Manager" && !(await managerCanAccessEmployee(req.user, employeeId))) {
+            return res.status(403).json({ message: "You can only view attendance for your department" });
         }
 
         const [attendance] = await db.query(
@@ -62,6 +73,10 @@ exports.getOne = async (req, res) => {
             return res.status(404).json({ message: "Attendance record not found" });
         }
 
+        if (req.user.role === "Manager" && !(await managerCanAccessEmployee(req.user, attendance[0].employee_id))) {
+            return res.status(403).json({ message: "You can only view attendance for your department" });
+        }
+
         res.json(attendance[0]);
     } catch (error) {
         console.error("Error fetching attendance record:", error);
@@ -76,6 +91,10 @@ exports.getMonthly = async (req, res) => {
         if (req.user.role === "Employee" &&
             (!req.user.employee_id || Number(employeeId) !== Number(req.user.employee_id))) {
             return res.status(403).json({ message: "You can only view your own attendance records" });
+        }
+
+        if (req.user.role === "Manager" && !(await managerCanAccessEmployee(req.user, employeeId))) {
+            return res.status(403).json({ message: "You can only view attendance for your department" });
         }
 
         const [attendance] = await db.query(
@@ -315,6 +334,12 @@ exports.search = async (req, res) => {
         `;
         
         const params = [];
+
+        const departmentId = await getManagerDepartmentId(req.user);
+        if (departmentId !== null) {
+            query += " AND e.department_id = ?";
+            params.push(departmentId);
+        }
         
         if (keyword) {
             query += ` AND (e.first_name LIKE ? OR e.last_name LIKE ?)`;

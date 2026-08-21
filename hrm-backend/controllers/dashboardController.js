@@ -1,4 +1,5 @@
 const db = require("../config/db");
+const { getManagerDepartmentId } = require("../utils/departmentAccess");
 
 exports.getStats = async (req, res) => {
     try {
@@ -38,23 +39,24 @@ exports.getStats = async (req, res) => {
         }
 
         if (isManager) {
+            const departmentId = await getManagerDepartmentId(req.user);
             const [[employeeCount], [departmentCount], [leaveCount], [pendingLeaves], [payrollCount], [reviewCount], [todayAttendance]] = await Promise.all([
-                db.query("SELECT COUNT(*) AS total FROM employees WHERE manager_id = ? AND employment_status = 'Active'", [employeeId]),
-                db.query("SELECT COUNT(DISTINCT department_id) AS total FROM employees WHERE manager_id = ?", [employeeId]),
-                db.query(`SELECT COUNT(*) AS total FROM leave_requests l JOIN employees e ON e.employee_id = l.employee_id WHERE e.manager_id = ?`, [employeeId]),
-                db.query(`SELECT COUNT(*) AS total FROM leave_requests l JOIN employees e ON e.employee_id = l.employee_id WHERE e.manager_id = ? AND l.status = 'Pending'`, [employeeId]),
-                db.query(`SELECT COUNT(*) AS total FROM payroll p JOIN employees e ON e.employee_id = p.employee_id WHERE e.manager_id = ?`, [employeeId]),
-                db.query(`SELECT COUNT(*) AS total FROM performance_reviews r JOIN employees e ON e.employee_id = r.employee_id WHERE e.manager_id = ?`, [employeeId]),
+                db.query("SELECT COUNT(*) AS total FROM employees WHERE department_id = ? AND employment_status = 'Active'", [departmentId]),
+                db.query("SELECT COUNT(DISTINCT department_id) AS total FROM employees WHERE department_id = ?", [departmentId]),
+                db.query(`SELECT COUNT(*) AS total FROM leave_requests l JOIN employees e ON e.employee_id = l.employee_id WHERE e.department_id = ?`, [departmentId]),
+                db.query(`SELECT COUNT(*) AS total FROM leave_requests l JOIN employees e ON e.employee_id = l.employee_id WHERE e.department_id = ? AND l.status = 'Pending'`, [departmentId]),
+                db.query("SELECT COUNT(*) AS total FROM payroll WHERE employee_id = ?", [employeeId]),
+                db.query(`SELECT COUNT(*) AS total FROM performance_reviews r JOIN employees e ON e.employee_id = r.employee_id WHERE e.department_id = ?`, [departmentId]),
                 db.query(`SELECT COUNT(*) AS total,
                     COALESCE(SUM(a.status = 'Present'), 0) AS present,
                     COALESCE(SUM(a.status = 'Absent'), 0) AS absent,
                     COALESCE(SUM(a.status = 'Late'), 0) AS late
                     FROM attendance a JOIN employees e ON e.employee_id = a.employee_id
-                    WHERE e.manager_id = ? AND a.attendance_date = CURDATE()`, [employeeId])
+                    WHERE e.department_id = ? AND a.attendance_date = CURDATE()`, [departmentId])
             ]);
 
             return res.json({
-                scope: "team",
+                scope: "department",
                 totalEmployees: employeeCount[0].total,
                 totalDepartments: departmentCount[0].total,
                 totalLeaves: leaveCount[0].total,

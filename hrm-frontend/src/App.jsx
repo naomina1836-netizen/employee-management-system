@@ -71,14 +71,14 @@ function App() {
                 <Route path="attendance/edit/:id" element={canManageAttendance ? <EditAttendance /> : <Navigate to="/attendance" replace />} />
                 <Route path="payroll" element={<PayrollList />} />
                 <Route path="payroll/create" element={canManagePayroll ? <CreatePayroll /> : <Navigate to="/payroll" replace />} />
-                <Route path="payroll/:id" element={isStaff ? <PayrollDetails /> : <Navigate to="/payroll" replace />} />
+                <Route path="payroll/:id" element={canManagePayroll ? <PayrollDetails /> : <Navigate to="/payroll" replace />} />
                 <Route path="payroll/edit/:id" element={canManagePayroll ? <EditPayroll /> : <Navigate to="/payroll" replace />} />
                 <Route path="performance" element={<PerformanceList />} />
                 <Route path="performance/create" element={canManagePerformance ? <CreatePerformance /> : <Navigate to="/performance" replace />} />
                 <Route path="performance/:id" element={isStaff ? <PerformanceDetails /> : <Navigate to="/performance" replace />} />
                 <Route path="performance/edit/:id" element={canManagePerformance ? <EditPerformance /> : <Navigate to="/performance" replace />} />
                 <Route path="notifications" element={<Notifications />} />
-                <Route path="reports" element={<Reports />} />
+                <Route path="reports" element={isAdminOrHR ? <Reports /> : <Navigate to="/dashboard" replace />} />
                 {isAdminOrHR && <Route path="admin/users" element={<AdminUsers />} />}
                 {!isAdminOrHR && <Route path="admin/users" element={<Navigate to="/dashboard" replace />} />}
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -6,7 +6,7 @@ const employeeController = require("../controllers/employeeController");
 const { validateEmployee } = require("../middleware/validators");
 
 router.get("/search", authenticate, authorize("Admin", "HR", "Manager"), employeeController.search);
-router.get("/stats", authenticate, authorize("Admin", "HR", "Manager"), employeeController.getStats);
+router.get("/stats", authenticate, authorize("Admin", "HR"), employeeController.getStats);
 router.get("/departments", authenticate, employeeController.getDepartments);
 router.get("/positions", authenticate, employeeController.getPositions);
 router.get("/", authenticate, authorize("Admin", "HR", "Manager"), employeeController.getAll);
