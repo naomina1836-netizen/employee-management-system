@@ -2208,6 +2208,28 @@ body {
     color: #1a1a2e;
 }
 
+.modal-close {
+    float: right;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(15, 18, 31, 0.08);
+    color: #1a1a2e;
+    cursor: pointer;
+}
+
+.modal-close:hover {
+    background: rgba(15, 18, 31, 0.16);
+}
+
+.logout-confirm {
+    width: auto;
+    margin: 0;
+}
+
 .modal-actions {
     display: flex;
     gap: 12px;

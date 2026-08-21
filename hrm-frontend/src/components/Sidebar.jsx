@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -12,16 +13,17 @@ import {
     UserCircle2,
     LogOut,
     ShieldCheck,
+    X,
 } from "lucide-react";
 
 function Sidebar() {
     const { user, logout } = useAuth();
+    const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
     const attendancePath = user?.role === "Employee" ? "/attendance/self" : "/attendance";
 
     const handleLogout = () => {
-        if (window.confirm("Are you sure you want to logout?")) {
-            logout();
-        }
+        setLogoutDialogOpen(false);
+        logout();
     };
 
     const navItems = [
@@ -32,7 +34,7 @@ function Sidebar() {
         { path: "/payroll", label: "Payroll", icon: Wallet },
         { path: "/performance", label: "Performance", icon: Star },
         { path: "/notifications", label: "Notifications", icon: Bell },
-        { path: "/reports", label: "Reports", icon: BarChart3 },
+        { path: "/reports", label: "Reports", icon: BarChart3, roles: ["Admin", "HR"] },
         { path: "/profile", label: "Profile", icon: UserCircle2 }
     ];
 
@@ -47,13 +49,14 @@ function Sidebar() {
     });
 
     return (
-        <div className="sidebar">
-            <div className="sidebar-header">
+        <>
+            <div className="sidebar">
+                <div className="sidebar-header">
                 <h2><ShieldCheck size={22} strokeWidth={2.2} /> HRM</h2>
                 <span className="user-role">{user?.role}</span>
-            </div>
+                </div>
 
-            <nav className="sidebar-nav">
+                <nav className="sidebar-nav">
                 {filteredNav.map((item) => (
                     <NavLink
                         key={item.path}
@@ -68,9 +71,9 @@ function Sidebar() {
                         <span className="nav-label">{item.label}</span>
                     </NavLink>
                 ))}
-            </nav>
+                </nav>
 
-            <div className="sidebar-footer">
+                <div className="sidebar-footer">
                 <div className="user-info">
                     <span className="user-name">
                         <UserCircle2 size={16} strokeWidth={2.2} />
@@ -78,12 +81,46 @@ function Sidebar() {
                     </span>
                     <span className="user-email">{user?.email}</span>
                 </div>
-                <button onClick={handleLogout} className="logout-btn">
+                <button onClick={() => setLogoutDialogOpen(true)} className="logout-btn">
                     <LogOut size={16} strokeWidth={2.2} />
                     Logout
                 </button>
+                </div>
             </div>
-        </div>
+
+            {logoutDialogOpen && (
+                <div
+                    className="modal-overlay"
+                    role="presentation"
+                    onMouseDown={(event) => {
+                        if (event.target === event.currentTarget) setLogoutDialogOpen(false);
+                    }}
+                >
+                    <section className="modal-content" role="dialog" aria-modal="true" aria-labelledby="logout-dialog-title">
+                        <button
+                            type="button"
+                            className="modal-close"
+                            onClick={() => setLogoutDialogOpen(false)}
+                            aria-label="Close logout dialog"
+                        >
+                            <X size={18} />
+                        </button>
+                        <span className="eyebrow">Secure session</span>
+                        <h2 id="logout-dialog-title">Ready to sign out?</h2>
+                        <p>Your session will end on this device. You can sign in again whenever you need to continue.</p>
+                        <div className="modal-actions">
+                            <button type="button" className="btn-secondary" onClick={() => setLogoutDialogOpen(false)}>
+                                Stay signed in
+                            </button>
+                            <button type="button" className="logout-btn logout-confirm" onClick={handleLogout}>
+                                <LogOut size={16} strokeWidth={2.2} />
+                                Sign out
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            )}
+        </>
     );
 }
 
