@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS leave_types (
   leave_type_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   leave_name VARCHAR(100) NOT NULL UNIQUE,
   description TEXT NULL,
+  max_days SMALLINT UNSIGNED NOT NULL DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -151,9 +152,9 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     REFERENCES users(user_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-INSERT IGNORE INTO leave_types (leave_name, description) VALUES
-  ('Annual Leave', 'Paid annual leave'),
-  ('Sick Leave', 'Medical leave'),
-  ('Maternity Leave', 'Maternity leave'),
-  ('Paternity Leave', 'Paternity leave'),
-  ('Unpaid Leave', 'Unpaid leave');
+INSERT IGNORE INTO leave_types (leave_name, description, max_days) VALUES
+  ('Annual Leave', 'Paid annual leave', 21),
+  ('Sick Leave', 'Medical leave', 14),
+  ('Maternity Leave', 'Maternity leave', 90),
+  ('Paternity Leave', 'Paternity leave', 10),
+  ('Unpaid Leave', 'Unpaid leave', 0);

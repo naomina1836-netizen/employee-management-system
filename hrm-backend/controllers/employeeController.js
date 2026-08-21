@@ -1,4 +1,5 @@
 const db = require("../config/db");
+const bcrypt = require("bcryptjs");
 
 exports.getAll = async (req, res) => {
     try {
@@ -56,6 +57,8 @@ exports.getOne = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
+    let connection;
+
     try {
         const {
             first_name, last_name, gender, phone, email, address,
@@ -67,16 +70,30 @@ exports.create = async (req, res) => {
             return res.status(400).json({ message: "First name, last name, and email are required" });
         }
 
-        const [existing] = await db.query(
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        const [existing] = await connection.query(
             "SELECT * FROM employees WHERE email = ?",
             [email]
         );
 
         if (existing.length > 0) {
+            await connection.rollback();
             return res.status(400).json({ message: "Email already exists" });
         }
 
-        const [result] = await db.query(
+        const [existingUsers] = await connection.query(
+            "SELECT user_id, employee_id FROM users WHERE email = ?",
+            [email]
+        );
+
+        if (existingUsers.length > 0 && existingUsers[0].employee_id) {
+            await connection.rollback();
+            return res.status(400).json({ message: "This email is already linked to another user account" });
+        }
+
+        const [result] = await connection.query(
             `INSERT INTO employees 
              (first_name, last_name, gender, phone, email, address, 
               date_of_birth, hire_date, department_id, position_id, 
@@ -91,29 +108,55 @@ exports.create = async (req, res) => {
             ]
         );
 
-        await db.query(
+        await connection.query(
             `INSERT INTO audit_logs (user_id, action, table_name, record_id) 
              VALUES (?, 'INSERT', 'employees', ?)`,
             [req.user.user_id, result.insertId]
         );
 
-        // If an account was created before its employee profile, connect it now.
-        const [linkResult] = await db.query(
-            `UPDATE users
-             SET employee_id = ?
-             WHERE email = ? AND employee_id IS NULL`,
-            [result.insertId, email]
-        );
+        let accountCreated = false;
+        let accountLinked = false;
+
+        if (existingUsers.length > 0) {
+            await connection.query(
+                "UPDATE users SET employee_id = ? WHERE user_id = ?",
+                [result.insertId, existingUsers[0].user_id]
+            );
+            accountLinked = true;
+        } else {
+            const defaultPassword = process.env.DEFAULT_EMPLOYEE_PASSWORD || "password123";
+            const passwordHash = await bcrypt.hash(defaultPassword, 10);
+            const username = `employee${result.insertId}`;
+
+            await connection.query(
+                `INSERT INTO users (username, email, password, role, employee_id, status)
+                 VALUES (?, ?, ?, 'Employee', ?, 'Active')`,
+                [username, email, passwordHash, result.insertId]
+            );
+            accountCreated = true;
+        }
+
+        await connection.commit();
 
         res.status(201).json({
-            message: "Employee created successfully",
+            message: accountCreated
+                ? "Employee and login account created successfully"
+                : "Employee created and linked to the existing login account",
             employee_id: result.insertId,
-            account_linked: linkResult.affectedRows > 0
+            account_created: accountCreated,
+            account_linked: accountLinked
         });
 
     } catch (error) {
+        if (connection) {
+            await connection.rollback();
+        }
         console.error("Error creating employee:", error);
         res.status(500).json({ message: "Failed to create employee" });
+    } finally {
+        if (connection) {
+            connection.release();
+        }
     }
 };
 
