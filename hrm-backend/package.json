@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "check:password": "node test-password.js"
+    "check:password": "node test-password.js",
+    "db:sync": "node scripts/sync-db.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

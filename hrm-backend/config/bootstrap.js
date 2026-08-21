@@ -59,6 +59,60 @@ async function runSchema(connection) {
   console.log("Database schema initialized successfully.");
 }
 
+async function columnExists(connection, tableName, columnName) {
+  const [columns] = await connection.query(
+    `
+    SELECT COUNT(*) AS count
+    FROM information_schema.columns
+    WHERE table_schema = ? AND table_name = ? AND column_name = ?
+    `,
+    [DB_NAME, tableName, columnName]
+  );
+
+  return Number(columns[0].count) > 0;
+}
+
+async function tableExists(connection, tableName) {
+  const [tables] = await connection.query(
+    `
+    SELECT COUNT(*) AS count
+    FROM information_schema.tables
+    WHERE table_schema = ? AND table_name = ?
+    `,
+    [DB_NAME, tableName]
+  );
+
+  return Number(tables[0].count) > 0;
+}
+
+async function syncSchemaMigrations(connection) {
+  await connection.query(`USE \`${DB_NAME}\``);
+
+  if (!(await tableExists(connection, "leave_types"))) {
+    return;
+  }
+
+  if (!(await columnExists(connection, "leave_types", "max_days"))) {
+    await connection.query(
+      "ALTER TABLE leave_types ADD COLUMN max_days SMALLINT UNSIGNED NOT NULL DEFAULT 0 AFTER description"
+    );
+    console.log("Added leave_types.max_days to the existing database.");
+  }
+
+  await connection.query(
+    `
+    INSERT INTO leave_types (leave_name, description, max_days) VALUES
+      ('Annual Leave', 'Paid annual leave', 21),
+      ('Sick Leave', 'Medical leave', 14),
+      ('Maternity Leave', 'Maternity leave', 90),
+      ('Paternity Leave', 'Paternity leave', 10),
+      ('Unpaid Leave', 'Unpaid leave', 0)
+    ON DUPLICATE KEY UPDATE
+      max_days = CASE WHEN max_days = 0 THEN VALUES(max_days) ELSE max_days END
+    `
+  );
+}
+
 async function seedDefaultAdmin(connection) {
   try {
     await connection.query(`USE \`${DB_NAME}\``);
@@ -146,7 +200,11 @@ async function ensureDatabaseSchema() {
       seededSchema = true;
     } else {
       console.log("Database tables already exist.");
+      await syncSchemaMigrations(connection);
+      await runSchema(connection);
     }
+
+    await syncSchemaMigrations(connection);
 
     const seededAdmin = await seedDefaultAdmin(connection);
 

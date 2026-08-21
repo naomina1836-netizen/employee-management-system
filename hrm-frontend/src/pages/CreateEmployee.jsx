@@ -88,8 +88,12 @@ function CreateEmployee() {
         setLoading(true);
 
         try {
-            await api.post("/employees", formData);
-            toast.success("Employee created successfully!");
+            const response = await api.post("/employees", formData);
+            toast.success(
+                response.data.account_created
+                    ? "Employee created. Login password: password123"
+                    : "Employee created and linked to the existing login account."
+            );
             navigate("/employees");
         } catch (error) {
             console.error("Error creating employee:", error);
