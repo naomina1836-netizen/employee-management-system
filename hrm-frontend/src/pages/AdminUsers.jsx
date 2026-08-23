@@ -1,11 +1,16 @@
 import { useState, useEffect } from "react";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
 
 function AdminUsers() {
+    const { user: currentUser } = useAuth();
+    const isAdmin = currentUser?.role === "Admin";
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [resetTarget, setResetTarget] = useState(null);
+    const [newPassword, setNewPassword] = useState("");
     const [formData, setFormData] = useState({
         username: "",
         email: "",
@@ -45,7 +50,6 @@ function AdminUsers() {
                 employee_id: formData.employee_id ? Number(formData.employee_id) : null
             };
             await api.post("/auth/register", payload);
-            toast.success("User created successfully!");
             setShowCreateModal(false);
             setFormData({
                 username: "",
@@ -65,11 +69,29 @@ function AdminUsers() {
         const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
         try {
             await api.patch(`/admin/users/${userId}/status`, { status: newStatus });
-            toast.success(`User ${newStatus.toLowerCase()}d successfully`);
             loadUsers();
         } catch (error) {
             console.error("Error updating user status:", error);
             toast.error("Failed to update user status");
+        }
+    };
+
+    const closeResetModal = () => {
+        setResetTarget(null);
+        setNewPassword("");
+    };
+
+    const handleResetPassword = async (e) => {
+        e.preventDefault();
+        try {
+            await api.post("/auth/reset-password", {
+                user_id: resetTarget.user_id,
+                new_password: newPassword
+            });
+            closeResetModal();
+        } catch (error) {
+            console.error("Error resetting password:", error);
+            toast.error(error.response?.data?.message || "Failed to reset password");
         }
     };
 
@@ -122,12 +144,20 @@ function AdminUsers() {
                                     </td>
                                     <td>{user.employee_id || '-'}</td>
                                     <td>
-                                        <button 
+                                        <button
                                             onClick={() => toggleUserStatus(user.user_id, user.status)}
                                             className={`btn-sm ${user.status === 'Active' ? 'btn-danger' : 'btn-approve'}`}
                                         >
                                             {user.status === 'Active' ? 'Deactivate' : 'Activate'}
                                         </button>
+                                        {isAdmin && (
+                                            <button
+                                                onClick={() => setResetTarget(user)}
+                                                className="btn-sm btn-edit"
+                                            >
+                                                Reset Password
+                                            </button>
+                                        )}
                                     </td>
                                 </tr>
                             ))
@@ -201,6 +231,40 @@ function AdminUsers() {
                                 <button 
                                     type="button" 
                                     onClick={() => setShowCreateModal(false)}
+                                    className="btn-secondary"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Reset Password Modal */}
+            {resetTarget && (
+                <div className="modal-overlay" onClick={closeResetModal}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <h2>Reset Password</h2>
+                        <p>Set a new password for <strong>{resetTarget.username}</strong>.</p>
+                        <form onSubmit={handleResetPassword}>
+                            <div className="form-group">
+                                <label>New Password *</label>
+                                <input
+                                    type="password"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    required
+                                    minLength="6"
+                                    autoComplete="new-password"
+                                    placeholder="At least 6 characters"
+                                />
+                            </div>
+                            <div className="modal-actions">
+                                <button type="submit" className="btn-primary">Reset Password</button>
+                                <button
+                                    type="button"
+                                    onClick={closeResetModal}
                                     className="btn-secondary"
                                 >
                                     Cancel
