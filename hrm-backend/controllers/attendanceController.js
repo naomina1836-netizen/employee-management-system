@@ -185,10 +185,13 @@ exports.selfCheckOut = async (req, res) => {
             return res.status(400).json({ message: "You have already checked out today" });
         }
 
-        const checkInTime = new Date(`1970-01-01T${existing[0].check_in}`);
         const checkOut = new Date();
         const checkOutTime = checkOut.toTimeString().slice(0, 8);
-        const diffMs = checkOut - checkInTime;
+        // Anchor both times to the same day so the difference is today's
+        // hours worked, not the span since 1970.
+        const checkInTime = new Date(`1970-01-01T${existing[0].check_in}`);
+        const checkOutBasis = new Date(`1970-01-01T${checkOutTime}`);
+        const diffMs = checkOutBasis - checkInTime;
         const hoursWorked = Math.max(0, parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2)));
 
         await db.query(
