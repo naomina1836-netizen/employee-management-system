@@ -42,7 +42,6 @@ function CreateAttendance() {
 
         try {
             await api.post("/attendance", formData);
-            toast.success("Attendance record created successfully!");
             navigate("/attendance");
         } catch (error) {
             console.error("Error creating attendance:", error);

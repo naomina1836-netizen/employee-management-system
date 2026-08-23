@@ -85,7 +85,6 @@ function CreatePayroll() {
 
         try {
             await api.post("/payroll", formData);
-            toast.success("Payroll record created successfully!");
             navigate("/payroll");
         } catch (error) {
             console.error("Error creating payroll:", error);

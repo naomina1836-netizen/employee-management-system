@@ -99,7 +99,6 @@ function BulkAttendance() {
             });
             return next;
         });
-        toast.success("Default times applied to non-absent rows");
     };
 
     const handleSubmit = async (e) => {
@@ -123,15 +122,10 @@ function BulkAttendance() {
 
         setSaving(true);
         try {
-            const response = await api.post("/attendance/bulk", {
+            await api.post("/attendance/bulk", {
                 attendance_date: attendanceDate,
                 records
             });
-            const { created = 0, updated = 0, skipped = 0 } = response.data;
-            toast.success(
-                `Saved: ${created} created, ${updated} updated` +
-                    (skipped ? `, ${skipped} skipped` : "")
-            );
             navigate("/attendance");
         } catch (error) {
             console.error("Bulk attendance error:", error);

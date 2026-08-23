@@ -56,7 +56,6 @@ function Profile() {
         e.preventDefault();
         try {
             const response = await api.put("/auth/me", formData);
-            toast.success("Profile updated successfully!");
             setProfile(response.data.user);
             setFormData({
                 username: response.data.user.username || "",
@@ -90,7 +89,6 @@ function Profile() {
                 current_password: passwordData.current_password,
                 new_password: passwordData.new_password
             });
-            toast.success("Password changed successfully!");
             setPasswordData({
                 current_password: "",
                 new_password: "",

@@ -29,7 +29,6 @@ function Login() {
 
         try {
             await login(email, password);
-            toast.success("Welcome back!");
             navigate("/dashboard");
         } catch (err) {
             const message = err.response?.data?.message

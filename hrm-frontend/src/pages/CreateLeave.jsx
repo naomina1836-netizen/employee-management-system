@@ -74,7 +74,6 @@ function CreateLeave() {
 
         try {
             await api.post("/leaves", formData);
-            toast.success("Leave request submitted successfully!");
             navigate("/leaves");
         } catch (error) {
             console.error("Error creating leave request:", error);
