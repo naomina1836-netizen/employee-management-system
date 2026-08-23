@@ -6,8 +6,8 @@ const {
   canAccessEmployee,
   isPrivileged,
   denyAccess
-} = require("../utils/access");
-const { parsePagination } = require("../utils/pagination");
+} = require("./utils/access");
+const { parsePagination } = require("./utils/pagination");
 
 describe("Employee ownership rules", () => {
   test("Employee cannot access another employee id", () => {

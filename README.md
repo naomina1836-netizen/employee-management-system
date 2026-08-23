@@ -323,29 +323,31 @@ The repository is divided into separate frontend, backend, and database componen
 employee-management-system/
 │
 ├── hrm-backend/
-│   ├── src/
-│   │   ├── controllers/
-│   │   ├── middleware/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   ├── config/
-│   │   └── utils/
-│   │
+│   ├── controllers/
+│   ├── routes/
+│   ├── middleware/
+│   ├── config/          # db pool + bootstrap (auto schema/seed)
+│   ├── models/
+│   ├── utils/           # access + pagination helpers
+│   ├── scripts/
+│   ├── database/
+│   ├── server.js
+│   ├── setup.js         # jest env setup
+│   ├── *.test.js        # jest tests
 │   ├── .env.example
-│   ├── package.json
-│   └── ...
+│   └── package.json
 │
 ├── hrm-frontend/
 │   ├── src/
 │   │   ├── components/
 │   │   ├── pages/
 │   │   ├── services/
-│   │   ├── hooks/
-│   │   └── ...
-│   │
-│   ├── .env.example
-│   ├── package.json
-│   └── ...
+│   │   ├── context/
+│   │   ├── styles/
+│   │   └── assets/
+│   ├── index.html
+│   ├── vite.config.js
+│   └── package.json
 │
 ├── database/
 │   └── schema.sql
@@ -354,7 +356,7 @@ employee-management-system/
 └── ...
 ```
 
-> The exact folder structure may evolve as new modules are added.
+> The backend uses a flat layout (no `src/` wrapper). The exact folder structure may evolve as new modules are added.
 
 ---
 

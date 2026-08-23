@@ -48,7 +48,7 @@ describe("Access helpers", () => {
     isPrivileged,
     canModifyEmployee,
     canAccessEmployee
-  } = require("../utils/access");
+  } = require("./utils/access");
 
   test("Admin/HR are privileged", () => {
     expect(isPrivileged("Admin")).toBe(true);
@@ -69,7 +69,7 @@ describe("Access helpers", () => {
 });
 
 describe("Pagination helper", () => {
-  const { parsePagination, paginatedResponse } = require("../utils/pagination");
+  const { parsePagination, paginatedResponse } = require("./utils/pagination");
 
   test("defaults", () => {
     const p = parsePagination({});
