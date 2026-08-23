@@ -6,17 +6,24 @@ const app = express();
 const { apiLimiter } = require("./middleware/rateLimiter");
 
 // CORS Configuration
+const DEV_ORIGINS = [
+    "http://localhost:5174",
+    "http://localhost:5173",
+    "http://localhost:5175",
+    "http://localhost:3000",
+    "http://127.0.0.1:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5175",
+    "http://127.0.0.1:3000",
+];
+
+// Allow overriding origins via CORS_ORIGINS (comma-separated); fall back to dev list.
+const allowedOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean)
+    : DEV_ORIGINS;
+
 const corsOptions = {
-    origin: [
-        "http://localhost:5174",
-        "http://localhost:5173",
-        "http://localhost:5175",
-        "http://localhost:3000",
-        "http://127.0.0.1:5174",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:5175",
-        "http://127.0.0.1:3000",
-    ],
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -95,6 +102,11 @@ const PORT = process.env.PORT || 5001;
 
 async function startServer() {
     try {
+        if (!process.env.JWT_SECRET) {
+            console.error("FATAL: JWT_SECRET is not set. Define it in hrm-backend/.env before starting the server.");
+            process.exit(1);
+        }
+
         const bootstrapResult = await ensureDatabaseSchema();
 
         if (bootstrapResult.seededSchema) {

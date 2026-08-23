@@ -40,7 +40,7 @@ exports.login = async (req, res) => {
                 employee_id: user.employee_id
             },
             process.env.JWT_SECRET,
-            { expiresIn: "7d" }
+            { expiresIn: process.env.JWT_EXPIRE || "7d" }
         );
 
         delete user.password;
