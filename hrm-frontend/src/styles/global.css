@@ -614,6 +614,24 @@ body {
     background-position: center;
     opacity: 1;
     pointer-events: none;
+    transform-origin: center center;
+    will-change: transform;
+    animation: kenburns 15s ease-in-out infinite alternate;
+}
+
+@keyframes kenburns {
+    0% {
+        transform: scale(1.12) translate(2%, 1.5%);
+    }
+    100% {
+        transform: scale(1.26) translate(-3%, -2.5%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .login-page::before {
+        animation: none;
+    }
 }
 
 .login-page::after {
