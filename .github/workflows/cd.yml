@@ -1,0 +1,121 @@
+name: CD
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Re-run the same checks as CI so deploy never ships untested code
+  verify:
+    name: Verify before deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: |
+            hrm-backend/package-lock.json
+            hrm-frontend/package-lock.json
+
+      - name: Install & test backend
+        working-directory: hrm-backend
+        run: |
+          npm ci
+          npm test
+        env:
+          NODE_ENV: test
+          JWT_SECRET: cd-verify-jwt-secret-do-not-use-in-production
+          JWT_EXPIRE: 1h
+          SKIP_BOOTSTRAP: "1"
+
+      - name: Install & build frontend
+        working-directory: hrm-frontend
+        run: |
+          npm ci
+          npm run build
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL || 'http://localhost:5001/api' }}
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist-${{ github.sha }}
+          path: hrm-frontend/dist
+          retention-days: 14
+
+  # --- Deploy placeholders ---
+  # Uncomment and configure one of the blocks below once you pick a host.
+  # Required secrets/vars are documented in the README CI/CD section.
+
+  deploy-staging:
+    name: Deploy (staging)
+    needs: verify
+    runs-on: ubuntu-latest
+    if: |
+      github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' ||
+      (github.event_name == 'workflow_dispatch' && inputs.environment == 'staging')
+    environment:
+      name: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist-${{ github.sha }}
+          path: hrm-frontend/dist
+
+      - name: Deploy placeholder
+        run: |
+          echo "CI/CD pipeline is ready."
+          echo "Frontend artifact downloaded to hrm-frontend/dist"
+          echo ""
+          echo "Next steps — pick a host and wire secrets:"
+          echo "  Frontend: Vercel / Netlify / Cloudflare Pages / static S3+CDN"
+          echo "  Backend:  Railway / Render / Fly.io / VPS with Docker"
+          echo ""
+          echo "Example (uncomment in this workflow when ready):"
+          echo "  - Vercel:  uses: amondnet/vercel-action@v25"
+          echo "  - Render:  curl deploy hook secret"
+          echo "  - Docker:  docker build + push + ssh restart"
+          echo ""
+          echo "Commit SHA: ${{ github.sha }}"
+          ls -la hrm-frontend/dist || true
+
+  # deploy-production:
+  #   name: Deploy (production)
+  #   needs: verify
+  #   runs-on: ubuntu-latest
+  #   if: github.event_name == 'workflow_dispatch' && inputs.environment == 'production'
+  #   environment:
+  #     name: production
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #     - name: Download frontend build
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: frontend-dist-${{ github.sha }}
+  #         path: hrm-frontend/dist
+  #     - name: Deploy to production
+  #       run: echo "Configure production deploy here"
