@@ -30,6 +30,7 @@ The project uses a **React + Vite** frontend, an **Express.js + Node.js** backen
 * [Troubleshooting](#-troubleshooting)
 * [Production Deployment](#-production-deployment)
 * [Environment Variables](#-environment-variables)
+* [CI/CD](#-cicd)
 * [Future Improvements](#-future-improvements)
 * [Contributing](#-contributing)
 * [License](#-license)
@@ -1226,6 +1227,63 @@ When changing API endpoints:
 7. Update this README if the public API changes.
 
 ---
+---
+
+# 🔄 CI/CD
+
+This repository includes GitHub Actions workflows for continuous integration and a deploy-ready continuous delivery pipeline.
+
+## Workflows
+
+| Workflow | File | Triggers | What it does |
+| --- | --- | --- | --- |
+| **CI** | `.github/workflows/ci.yml` | Push & pull requests to `main` / `master` / `develop` | Installs deps, runs backend Jest tests, builds the Vite frontend, uploads `dist` artifact |
+| **CD** | `.github/workflows/cd.yml` | Push to `main` / `master`, or manual **workflow_dispatch** | Re-verifies tests + build, uploads a SHA-tagged frontend artifact, then runs a staging deploy job (placeholder until you wire a host) |
+
+## What runs in CI
+
+1. **Backend** (`hrm-backend`): `npm ci` → `npm test`  
+   - Unit tests only (no MySQL required).  
+   - `JWT_SECRET` and `SKIP_BOOTSTRAP` are set by the workflow.
+2. **Frontend** (`hrm-frontend`): `npm ci` → `npm run build`  
+   - Optional repo variable `VITE_API_URL` controls the build-time API base URL.
+
+Both jobs must pass for the aggregate **CI success** check (useful for branch protection).
+
+## Enabling branch protection (recommended)
+
+In GitHub → **Settings → Branches → Branch protection rules** for `main`:
+
+- Require a pull request before merging
+- Require status checks to pass: **CI success**
+- (Optional) Require branches to be up to date
+
+## Wiring real deploys (CD)
+
+The CD workflow currently stops at a **Deploy (staging)** placeholder so the pipeline is safe by default. Choose a host and add the matching step:
+
+| Target | Typical approach | Secrets / vars to add |
+| --- | --- | --- |
+| **Frontend – Vercel** | `amondnet/vercel-action` or Vercel GitHub integration | `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` |
+| **Frontend – Netlify** | Netlify site + deploy from artifact | `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID` |
+| **Backend – Render** | Deploy hook on push | `RENDER_DEPLOY_HOOK` |
+| **Backend – Railway** | Railway GitHub integration or CLI | `RAILWAY_TOKEN` |
+| **Docker / VPS** | Build image → push registry → SSH restart | Registry credentials + SSH key |
+
+Also set repository **Variables** (Settings → Secrets and variables → Actions → Variables):
+
+- `VITE_API_URL` — public API URL used when building the frontend (e.g. `https://api.example.com/api`)
+
+Create GitHub **Environments** named `staging` and `production` if you want approval gates before production deploys.
+
+## Local parity
+
+```bash
+# Same as CI backend job
+cd hrm-backend && npm ci && npm test
+
+# Same as CI frontend job
+cd hrm-frontend && npm ci && npm run build
 
 # 🔮 Future Improvements
 
