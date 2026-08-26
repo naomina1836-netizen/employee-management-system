@@ -28,6 +28,7 @@ The project uses a **React + Vite** frontend, an **Express.js + Node.js** backen
 * [Rate Limiting](#-rate-limiting)
 * [Development Workflow](#-development-workflow)
 * [Troubleshooting](#-troubleshooting)
+* [Docker](#-docker)
 * [Production Deployment](#-production-deployment)
 * [Environment Variables](#-environment-variables)
 * [CI/CD](#-cicd)
@@ -1113,6 +1114,28 @@ VITE_API_URL
 in the frontend.
 
 ---
+---
+
+# 🐳 Docker
+
+Run the full stack (MySQL + backend + frontend) with Docker Compose.
+
+## Prerequisites
+
+* [Docker](https://docs.docker.com/get-docker/)
+* [Docker Compose](https://docs.docker.com/compose/) v2 (`docker compose`)
+
+## Quick start
+
+From the **repository root**:
+
+```bash
+# 1. Environment file (optional — defaults work for local demos)
+cp .env.docker.example .env
+
+# 2. Edit .env — set a strong JWT_SECRET (and MYSQL_ROOT_PASSWORD) before any real use
+# 3. Build and start
+docker compose up --build
 
 # 🚀 Production Deployment
 

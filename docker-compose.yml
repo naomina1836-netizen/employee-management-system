@@ -1,0 +1,85 @@
+# Employee Management System — local / demo stack
+# Usage:
+#   cp .env.docker.example .env
+#   docker compose up --build
+#
+# Frontend: http://localhost:8080
+# Backend:  http://localhost:5001
+# MySQL:    localhost:3306
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: hrm-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-hrm_root_secret}
+      MYSQL_DATABASE: ${DB_NAME:-hrm_db}
+      MYSQL_USER: ${DB_USER:-hrm_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-hrm_pass}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - hrm_mysql_data:/var/lib/mysql
+    healthcheck:
+      # $$ so Compose passes a literal $ to the container (uses MYSQL_ROOT_PASSWORD env)
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 25s
+    networks:
+      - hrm-net
+
+  backend:
+    build:
+      context: ./hrm-backend
+      dockerfile: Dockerfile
+    container_name: hrm-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      PORT: 5001
+      DB_HOST: mysql
+      DB_PORT: 3306
+      # Root is used so bootstrap can CREATE DATABASE / load schema on first boot.
+      # For stricter prod setups, switch to DB_USER/DB_PASSWORD and pre-create the schema.
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-hrm_root_secret}
+      DB_NAME: ${DB_NAME:-hrm_db}
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-secret-in-production}
+      JWT_EXPIRE: ${JWT_EXPIRE:-7d}
+      # Required for first-boot admin when DB has no users
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-password123}
+      DEFAULT_EMPLOYEE_PASSWORD: ${DEFAULT_EMPLOYEE_PASSWORD:-password123}
+      # Browser origin(s) for the SPA (comma-separated)
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://localhost:5174}
+    ports:
+      - "${BACKEND_PORT:-5001}:5001"
+    networks:
+      - hrm-net
+
+  frontend:
+    build:
+      context: ./hrm-frontend
+      dockerfile: Dockerfile
+      args:
+        # Same-origin /api; nginx proxies to backend
+        VITE_API_URL: /api
+    container_name: hrm-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    networks:
+      - hrm-net
+
+volumes:
+  hrm_mysql_data:
+
+networks:
+  hrm-net:
+    driver: bridge
