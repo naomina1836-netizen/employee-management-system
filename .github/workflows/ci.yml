@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   backend:
-    name: Backend (lint & test)
+    name: Backend (test)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -64,8 +64,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          # Build-time API URL (override in CD / hosting env as needed)
-          VITE_API_URL: ${{ vars.VITE_API_URL || 'http://localhost:5001/api' }}
+          VITE_API_URL: ${{ vars.VITE_API_URL != '' && vars.VITE_API_URL || 'http://localhost:5001/api' }}
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -74,7 +73,6 @@ jobs:
           path: hrm-frontend/dist
           retention-days: 7
 
-  # Single status check that PRs / branch protection can require
   ci-success:
     name: CI success
     runs-on: ubuntu-latest
@@ -83,6 +81,8 @@ jobs:
     steps:
       - name: Check job results
         run: |
+          echo "backend=${{ needs.backend.result }}"
+          echo "frontend=${{ needs.frontend.result }}"
           if [ "${{ needs.backend.result }}" != "success" ] || [ "${{ needs.frontend.result }}" != "success" ]; then
             echo "One or more CI jobs failed"
             exit 1

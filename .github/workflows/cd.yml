@@ -4,24 +4,19 @@ on:
   push:
     branches: [main, master]
   workflow_dispatch:
-    inputs:
-      environment:
-        description: "Target environment"
-        required: true
-        default: staging
-        type: choice
-        options:
-          - staging
-          - production
 
 concurrency:
   group: cd-${{ github.ref }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
-  # Re-run the same checks as CI so deploy never ships untested code
   verify:
-    name: Verify before deploy
+    name: Verify (test + build)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -53,69 +48,39 @@ jobs:
           npm ci
           npm run build
         env:
-          VITE_API_URL: ${{ vars.VITE_API_URL || 'http://localhost:5001/api' }}
+          VITE_API_URL: ${{ vars.VITE_API_URL != '' && vars.VITE_API_URL || 'http://localhost:5001/api' }}
+          VITE_BASE: /${{ github.event.repository.name }}/
 
-      - name: Upload frontend artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: frontend-dist-${{ github.sha }}
           path: hrm-frontend/dist
-          retention-days: 14
 
-  # --- Deploy placeholders ---
-  # Uncomment and configure one of the blocks below once you pick a host.
-  # Required secrets/vars are documented in the README CI/CD section.
-
-  deploy-staging:
-    name: Deploy (staging)
+  deploy-pages:
+    name: Deploy frontend (GitHub Pages)
     needs: verify
     runs-on: ubuntu-latest
-    if: |
-      github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' ||
-      (github.event_name == 'workflow_dispatch' && inputs.environment == 'staging')
     environment:
-      name: staging
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
-      - name: Download frontend build
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist-${{ github.sha }}
-          path: hrm-frontend/dist
-
-      - name: Deploy placeholder
+  deploy-backend-hook:
+    name: Deploy backend (Render hook)
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy hook (optional)
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
-          echo "CI/CD pipeline is ready."
-          echo "Frontend artifact downloaded to hrm-frontend/dist"
-          echo ""
-          echo "Next steps — pick a host and wire secrets:"
-          echo "  Frontend: Vercel / Netlify / Cloudflare Pages / static S3+CDN"
-          echo "  Backend:  Railway / Render / Fly.io / VPS with Docker"
-          echo ""
-          echo "Example (uncomment in this workflow when ready):"
-          echo "  - Vercel:  uses: amondnet/vercel-action@v25"
-          echo "  - Render:  curl deploy hook secret"
-          echo "  - Docker:  docker build + push + ssh restart"
-          echo ""
-          echo "Commit SHA: ${{ github.sha }}"
-          ls -la hrm-frontend/dist || true
-
-  # deploy-production:
-  #   name: Deploy (production)
-  #   needs: verify
-  #   runs-on: ubuntu-latest
-  #   if: github.event_name == 'workflow_dispatch' && inputs.environment == 'production'
-  #   environment:
-  #     name: production
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #     - name: Download frontend build
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: frontend-dist-${{ github.sha }}
-  #         path: hrm-frontend/dist
-  #     - name: Deploy to production
-  #       run: echo "Configure production deploy here"
+          if [ -z "$HOOK" ]; then
+            echo "RENDER_DEPLOY_HOOK not set — skipping backend deploy."
+            exit 0
+          fi
+          echo "Triggering Render deploy hook..."
+          curl -fsS -X POST "$HOOK"
+          echo "Render deploy requested."
