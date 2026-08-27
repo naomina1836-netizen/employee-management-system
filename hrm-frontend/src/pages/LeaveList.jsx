@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import SearchBar from "../components/SearchBar";
 import FilterBar from "../components/FilterBar";
 import { useAuth } from "../context/AuthContext";
+import { useConfirm } from "../context/ConfirmContext";
 
 function LeaveList() {
     const [leaves, setLeaves] = useState([]);
@@ -14,6 +15,7 @@ function LeaveList() {
     const [searchVersion, setSearchVersion] = useState(0);
     const [filterVersion, setFilterVersion] = useState(0);
     const { user } = useAuth();
+    const confirm = useConfirm();
     const isEmployee = user?.role === "Employee";
     const canApprove = ["Admin", "HR", "Manager"].includes(user?.role);
     const canDelete = ["Admin", "HR"].includes(user?.role);
@@ -86,11 +88,15 @@ function LeaveList() {
     };
 
     const updateStatus = async (id, status) => {
-        if (!window.confirm(`Are you sure you want to ${status} this leave request?`)) return;
+        const confirmed = await confirm({
+            title: "Update leave request",
+            message: `Are you sure you want to ${status} this leave request?`,
+            confirmText: status
+        });
+        if (!confirmed) return;
 
         try {
             await api.patch(`/leaves/${id}/status`, { status });
-            toast.success(`Leave request ${status.toLowerCase()} successfully!`);
             loadLeaves();
         } catch (error) {
             console.error("Error updating leave status:", error);
@@ -99,11 +105,15 @@ function LeaveList() {
     };
 
     const deleteLeave = async (id) => {
-        if (!window.confirm("Delete this leave request?")) return;
+        const confirmed = await confirm({
+            title: "Delete leave request",
+            message: "Delete this leave request?",
+            confirmText: "Delete"
+        });
+        if (!confirmed) return;
 
         try {
             await api.delete(`/leaves/${id}`);
-            toast.success("Leave request deleted successfully!");
             loadLeaves();
         } catch (error) {
             console.error("Error deleting leave request:", error);

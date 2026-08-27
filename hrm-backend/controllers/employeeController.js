@@ -1,6 +1,8 @@
 const db = require("../config/db");
 const bcrypt = require("bcryptjs");
 const { getManagerDepartmentId, managerCanAccessEmployee } = require("../utils/departmentAccess");
+const crypto = require("crypto");
+const { parsePagination, paginatedResponse } = require("../utils/pagination");
 
 async function roleForPosition(connection, positionId) {
     if (!positionId) {
@@ -35,10 +37,28 @@ exports.getAll = async (req, res) => {
             query += " WHERE e.department_id = ?";
             params.push(departmentId);
         }
-        query += " ORDER BY e.employee_id DESC";
-        const [employees] = await db.query(query, params);
 
-        res.json(employees);
+        // Pagination is opt-in: callers that omit page/limit still receive the full list.
+        const wantsPagination = req.query.page !== undefined || req.query.limit !== undefined;
+
+        if (!wantsPagination) {
+            const [employees] = await db.query(`${query} ORDER BY e.employee_id DESC`, params);
+            return res.json(employees);
+        }
+
+        // limit/offset are validated integers from parsePagination, safe to inline.
+        const { limit, offset, page } = parsePagination(req.query);
+
+        const countQuery = departmentId !== null
+            ? "SELECT COUNT(*) AS total FROM employees WHERE department_id = ?"
+            : "SELECT COUNT(*) AS total FROM employees";
+        const [countRows] = await db.query(countQuery, params);
+        const [employees] = await db.query(
+            `${query} ORDER BY e.employee_id DESC LIMIT ${limit} OFFSET ${offset}`,
+            params
+        );
+
+        res.json(paginatedResponse(employees, countRows[0].total, { limit, offset, page }));
 
     } catch (error) {
         console.error("Error fetching employees:", error);
@@ -88,11 +108,15 @@ exports.create = async (req, res) => {
         const {
             first_name, last_name, gender, phone, email, address,
             date_of_birth, hire_date, department_id, position_id,
-            manager_id, employment_status
+            manager_id, employment_status, password
         } = req.body;
 
         if (!first_name || !last_name || !email) {
             return res.status(400).json({ message: "First name, last name, and email are required" });
+        }
+
+        if (password && password.length < 6) {
+            return res.status(400).json({ message: "Password must be at least 6 characters" });
         }
 
         connection = await db.getConnection();
@@ -142,6 +166,7 @@ exports.create = async (req, res) => {
 
         let accountCreated = false;
         let accountLinked = false;
+        let tempPassword = null;
 
         if (existingUsers.length > 0) {
             await connection.query(
@@ -153,8 +178,11 @@ exports.create = async (req, res) => {
             );
             accountLinked = true;
         } else {
-            const defaultPassword = process.env.DEFAULT_EMPLOYEE_PASSWORD || "password123";
-            const passwordHash = await bcrypt.hash(defaultPassword, 10);
+            // Prefer the admin-supplied password; otherwise fall back to a
+            // configured default or a random temporary one.
+            const adminSetPassword = Boolean(password);
+            const loginPassword = password || process.env.DEFAULT_EMPLOYEE_PASSWORD || crypto.randomBytes(9).toString("base64url");
+            const passwordHash = await bcrypt.hash(loginPassword, 10);
             const username = `employee${result.insertId}`;
 
             await connection.query(
@@ -163,6 +191,10 @@ exports.create = async (req, res) => {
                 [username, email, passwordHash, accountRole, result.insertId]
             );
             accountCreated = true;
+            // Only reveal the password when we generated it; admin-set ones are already known.
+            if (!adminSetPassword) {
+                tempPassword = loginPassword;
+            }
         }
 
         await connection.commit();
@@ -173,7 +205,8 @@ exports.create = async (req, res) => {
                 : "Employee created and linked to the existing login account",
             employee_id: result.insertId,
             account_created: accountCreated,
-            account_linked: accountLinked
+            account_linked: accountLinked,
+            temp_password: tempPassword
         });
 
     } catch (error) {

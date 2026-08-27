@@ -97,7 +97,6 @@ function EditEmployee() {
 
         try {
             await api.put(`/employees/${id}`, formData);
-            toast.success("Employee updated successfully!");
             navigate("/employees");
         } catch (error) {
             console.error("Error updating employee:", error);

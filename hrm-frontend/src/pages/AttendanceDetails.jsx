@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import api from "../services/api";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
+import { useConfirm } from "../context/ConfirmContext";
 
 function formatDate(value) {
     if (!value) return "-";
@@ -15,6 +16,7 @@ function AttendanceDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
+    const confirm = useConfirm();
     const canManage = ["Admin", "HR"].includes(user?.role);
     const [attendance, setAttendance] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -39,12 +41,16 @@ function AttendanceDetails() {
     }
 
     async function handleDelete() {
-        if (!window.confirm("Delete this attendance record?")) return;
+        const confirmed = await confirm({
+            title: "Delete attendance record",
+            message: "Delete this attendance record?",
+            confirmText: "Delete"
+        });
+        if (!confirmed) return;
 
         setDeleting(true);
         try {
             await api.delete(`/attendance/${id}`);
-            toast.success("Attendance record deleted successfully");
             navigate("/attendance");
         } catch (error) {
             console.error("Error deleting attendance:", error);

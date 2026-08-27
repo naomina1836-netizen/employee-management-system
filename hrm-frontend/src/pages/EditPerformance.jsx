@@ -65,7 +65,6 @@ function EditPerformance() {
 
         try {
             await api.put(`/performance/${id}`, formData);
-            toast.success("Performance review updated successfully!");
             navigate(`/performance/${id}`);
         } catch (error) {
             console.error("Error updating review:", error);

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import api from "../services/api";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
+import { useConfirm } from "../context/ConfirmContext";
 
 function formatMoney(value) {
     const number = Number(value);
@@ -14,6 +15,7 @@ function PayrollDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
+    const confirm = useConfirm();
     const canEdit = ["Admin", "HR"].includes(user?.role);
     const canDelete = user?.role === "Admin";
     const [payroll, setPayroll] = useState(null);
@@ -39,12 +41,16 @@ function PayrollDetails() {
     }
 
     async function handleDelete() {
-        if (!window.confirm("Delete this payroll record?")) return;
+        const confirmed = await confirm({
+            title: "Delete payroll record",
+            message: "Delete this payroll record?",
+            confirmText: "Delete"
+        });
+        if (!confirmed) return;
 
         setDeleting(true);
         try {
             await api.delete(`/payroll/${id}`);
-            toast.success("Payroll record deleted successfully");
             navigate("/payroll");
         } catch (error) {
             console.error("Error deleting payroll:", error);

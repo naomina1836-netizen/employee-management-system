@@ -57,7 +57,6 @@ function EditAttendance() {
 
         try {
             await api.put(`/attendance/${id}`, formData);
-            toast.success("Attendance record updated successfully!");
             navigate(`/attendance/${id}`);
         } catch (error) {
             console.error("Error updating attendance:", error);

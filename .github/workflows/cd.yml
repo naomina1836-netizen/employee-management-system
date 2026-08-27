@@ -1,0 +1,86 @@
+name: CD
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  verify:
+    name: Verify (test + build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: |
+            hrm-backend/package-lock.json
+            hrm-frontend/package-lock.json
+
+      - name: Install & test backend
+        working-directory: hrm-backend
+        run: |
+          npm ci
+          npm test
+        env:
+          NODE_ENV: test
+          JWT_SECRET: cd-verify-jwt-secret-do-not-use-in-production
+          JWT_EXPIRE: 1h
+          SKIP_BOOTSTRAP: "1"
+
+      - name: Install & build frontend
+        working-directory: hrm-frontend
+        run: |
+          npm ci
+          npm run build
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL != '' && vars.VITE_API_URL || 'http://localhost:5001/api' }}
+          VITE_BASE: /${{ github.event.repository.name }}/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: hrm-frontend/dist
+
+  deploy-pages:
+    name: Deploy frontend (GitHub Pages)
+    needs: verify
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  deploy-backend-hook:
+    name: Deploy backend (Render hook)
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy hook (optional)
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "RENDER_DEPLOY_HOOK not set — skipping backend deploy."
+            exit 0
+          fi
+          echo "Triggering Render deploy hook..."
+          curl -fsS -X POST "$HOOK"
+          echo "Render deploy requested."

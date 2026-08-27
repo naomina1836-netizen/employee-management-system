@@ -64,7 +64,9 @@ async function columnExists(connection, tableName, columnName) {
     `
     SELECT COUNT(*) AS count
     FROM information_schema.columns
-    WHERE table_schema = ? AND table_name = ? AND column_name = ?
+    WHERE table_schema = ?
+      AND table_name = ?
+      AND column_name = ?
     `,
     [DB_NAME, tableName, columnName]
   );
@@ -77,7 +79,8 @@ async function tableExists(connection, tableName) {
     `
     SELECT COUNT(*) AS count
     FROM information_schema.tables
-    WHERE table_schema = ? AND table_name = ?
+    WHERE table_schema = ?
+      AND table_name = ?
     `,
     [DB_NAME, tableName]
   );
@@ -85,6 +88,19 @@ async function tableExists(connection, tableName) {
   return Number(tables[0].count) > 0;
 }
 
+/**
+ * Keep existing databases compatible with the current schema.
+ *
+ * IMPORTANT:
+ * The current schema.sql defines leave_types as:
+ *
+ * leave_type_id
+ * leave_name
+ * max_days
+ * created_at
+ *
+ * There is NO description column.
+ */
 async function syncSchemaMigrations(connection) {
   await connection.query(`USE \`${DB_NAME}\``);
 
@@ -92,25 +108,39 @@ async function syncSchemaMigrations(connection) {
     return;
   }
 
+  // Add max_days only if an older database is missing it.
   if (!(await columnExists(connection, "leave_types", "max_days"))) {
     await connection.query(
-      "ALTER TABLE leave_types ADD COLUMN max_days SMALLINT UNSIGNED NOT NULL DEFAULT 0 AFTER description"
+      `
+      ALTER TABLE leave_types
+      ADD COLUMN max_days INT NOT NULL DEFAULT 0
+      `
     );
+
     console.log("Added leave_types.max_days to the existing database.");
   }
 
+  // Seed/update leave types using ONLY columns that exist
+  // in the current schema.sql.
   await connection.query(
     `
-    INSERT INTO leave_types (leave_name, description, max_days) VALUES
-      ('Annual Leave', 'Paid annual leave', 21),
-      ('Sick Leave', 'Medical leave', 14),
-      ('Maternity Leave', 'Maternity leave', 90),
-      ('Paternity Leave', 'Paternity leave', 10),
-      ('Unpaid Leave', 'Unpaid leave', 0)
+    INSERT INTO leave_types (leave_name, max_days)
+    VALUES
+      ('Annual Leave', 20),
+      ('Sick Leave', 10),
+      ('Maternity Leave', 90),
+      ('Paternity Leave', 10),
+      ('Emergency Leave', 5),
+      ('Study Leave', 30)
     ON DUPLICATE KEY UPDATE
-      max_days = CASE WHEN max_days = 0 THEN VALUES(max_days) ELSE max_days END
+      max_days = CASE
+        WHEN max_days = 0 THEN VALUES(max_days)
+        ELSE max_days
+      END
     `
   );
+
+  console.log("Leave types synchronized.");
 }
 
 async function syncEmployeeRoles(connection) {
@@ -141,7 +171,7 @@ async function seedDefaultAdmin(connection) {
       SELECT COUNT(*) AS count
       FROM information_schema.tables
       WHERE table_schema = ?
-      AND table_name = 'users'
+        AND table_name = 'users'
       `,
       [DB_NAME]
     );
@@ -151,7 +181,9 @@ async function seedDefaultAdmin(connection) {
       return false;
     }
 
-    const [users] = await connection.query("SELECT COUNT(*) AS count FROM users");
+    const [users] = await connection.query(
+      "SELECT COUNT(*) AS count FROM users"
+    );
 
     if (Number(users[0].count) > 0) {
       console.log("Users already exist. Admin seed skipped.");
@@ -162,7 +194,7 @@ async function seedDefaultAdmin(connection) {
 
     if (!password) {
       console.warn(
-        "ADMIN_PASSWORD is not set. No default admin was created. Set it before starting with an empty database."
+        "ADMIN_PASSWORD is not set. No default admin was created."
       );
       return false;
     }
@@ -203,7 +235,9 @@ async function ensureDatabaseSchema() {
 
     console.log("Connected to MySQL successfully.");
 
-    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\``);
+    await connection.query(
+      `CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\``
+    );
 
     console.log(`Database "${DB_NAME}" is ready.`);
 
@@ -215,22 +249,26 @@ async function ensureDatabaseSchema() {
 
     if (!hasTables) {
       console.log("No tables found. Running schema.sql...");
+
       await runSchema(connection);
+
       seededSchema = true;
     } else {
       console.log("Database tables already exist.");
-      await syncSchemaMigrations(connection);
-      await runSchema(connection);
-    }
 
-    await syncSchemaMigrations(connection);
-    await syncEmployeeRoles(connection);
+      // Run only migrations needed for an existing database.
+      await syncSchemaMigrations(connection);
+      await syncEmployeeRoles(connection);
+    }
 
     const seededAdmin = await seedDefaultAdmin(connection);
 
     console.log("Database initialization completed.");
 
-    return { seededSchema, seededAdmin };
+    return {
+      seededSchema,
+      seededAdmin,
+    };
   } catch (error) {
     console.error("Failed to initialize database:");
     console.error(error);

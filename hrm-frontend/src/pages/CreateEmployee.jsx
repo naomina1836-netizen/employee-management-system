@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 function CreateEmployee() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+    const [createdPassword, setCreatedPassword] = useState(null);
     const [departments, setDepartments] = useState([]);
     const [positions, setPositions] = useState([]);
     const [employees, setEmployees] = useState([]);
@@ -21,7 +22,8 @@ function CreateEmployee() {
         department_id: "",
         position_id: "",
         manager_id: "",
-        employment_status: "Active"
+        employment_status: "Active",
+        password: ""
     });
 
     useEffect(() => {
@@ -89,12 +91,11 @@ function CreateEmployee() {
 
         try {
             const response = await api.post("/employees", formData);
-            toast.success(
-                response.data.account_created
-                    ? "Employee created. Login password: password123"
-                    : "Employee created and linked to the existing login account."
-            );
-            navigate("/employees");
+            if (response.data.temp_password) {
+                setCreatedPassword(response.data.temp_password);
+            } else {
+                navigate("/employees");
+            }
         } catch (error) {
             console.error("Error creating employee:", error);
             toast.error(error.response?.data?.message || "Failed to create employee");
@@ -167,6 +168,22 @@ function CreateEmployee() {
                             required
                             placeholder="employee@hrm.com"
                         />
+                    </div>
+
+                    <div className="form-group">
+                        <label>Login Password</label>
+                        <input
+                            type="password"
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            minLength="6"
+                            placeholder="Leave blank to auto-generate"
+                            autoComplete="new-password"
+                        />
+                        <small className="form-hint">
+                            Sets the new login account's password. Leave blank to auto-generate a temporary one.
+                        </small>
                     </div>
 
                     <div className="form-group">
@@ -270,6 +287,33 @@ function CreateEmployee() {
                     </div>
                 </form>
             </div>
+
+            {createdPassword && (
+                <div className="modal-overlay">
+                    <div className="modal-content" onClick={(event) => event.stopPropagation()}>
+                        <h2>Employee created</h2>
+                        <p>
+                            A login account was created automatically. Share this temporary
+                            password with the employee &mdash; it won&apos;t be shown again.
+                        </p>
+                        <p style={{ fontSize: "1.25rem", fontFamily: "monospace", letterSpacing: "0.05em" }}>
+                            <strong>{createdPassword}</strong>
+                        </p>
+                        <div className="modal-actions">
+                            <button
+                                type="button"
+                                className="btn-primary"
+                                onClick={() => {
+                                    setCreatedPassword(null);
+                                    navigate("/employees");
+                                }}
+                            >
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -14,6 +14,8 @@ function EmployeeList() {
     const [positions, setPositions] = useState([]);
     const [searchVersion, setSearchVersion] = useState(0);
     const [filterVersion, setFilterVersion] = useState(0);
+    const [page, setPage] = useState(1);
+    const [pageInfo, setPageInfo] = useState(null);
     const { user } = useAuth();
     const canManageEmployees = ["Admin", "HR"].includes(user?.role);
 
@@ -23,7 +25,7 @@ function EmployeeList() {
 
     useEffect(() => {
         loadEmployees();
-    }, [filters]);
+    }, [filters, page]);
 
     async function loadLookupData() {
         try {
@@ -43,19 +45,25 @@ function EmployeeList() {
     async function loadEmployees() {
         setLoading(true);
         try {
-            let url = "/employees";
             const params = new URLSearchParams();
-            
+
             if (filters.keyword) params.append("keyword", filters.keyword);
             if (filters.department) params.append("department", filters.department);
             if (filters.position) params.append("position", filters.position);
             if (filters.status) params.append("status", filters.status);
-            
-            const query = params.toString();
-            if (query) url += `/search?${query}`;
-            
-            const response = await api.get(url);
-            setEmployees(response.data);
+
+            const isSearching = [...params.keys()].length > 0;
+
+            if (isSearching) {
+                // Search returns a plain array; pagination controls are hidden.
+                const response = await api.get(`/employees/search?${params.toString()}`);
+                setEmployees(response.data);
+                setPageInfo(null);
+            } else {
+                const response = await api.get(`/employees?page=${page}&limit=20`);
+                setEmployees(response.data.data);
+                setPageInfo(response.data.pagination);
+            }
         } catch (error) {
             console.error("Error loading employees:", error);
             toast.error("Failed to load employees");
@@ -65,11 +73,13 @@ function EmployeeList() {
     }
 
     const handleSearch = (keyword) => {
+        setPage(1);
         setFilters({ ...filters, keyword });
         setSearchVersion((value) => value + 1);
     };
 
     const handleFilterChange = (name, value) => {
+        setPage(1);
         if (value) {
             setFilters({ ...filters, [name]: value });
         } else {
@@ -80,6 +90,7 @@ function EmployeeList() {
     };
 
     const clearFilters = () => {
+        setPage(1);
         setFilters({});
         setSearchVersion((value) => value + 1);
         setFilterVersion((value) => value + 1);
@@ -123,7 +134,7 @@ function EmployeeList() {
     return (
         <div className="page-container">
             <div className="page-header">
-                <h1>Employees ({employees.length})</h1>
+                <h1>Employees ({pageInfo ? pageInfo.total : employees.length})</h1>
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                     <button type="button" className="btn-secondary" onClick={clearFilters}>
                         Clear Filters
@@ -188,6 +199,18 @@ function EmployeeList() {
                     </tbody>
                 </table>
             </div>
+
+            {pageInfo && pageInfo.totalPages > 1 && (
+                <div style={{ display: "flex", gap: "10px", alignItems: "center", justifyContent: "center", marginTop: "16px" }}>
+                    <button type="button" className="btn-secondary" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+                        Previous
+                    </button>
+                    <span>Page {pageInfo.page} of {pageInfo.totalPages}</span>
+                    <button type="button" className="btn-secondary" disabled={page >= pageInfo.totalPages} onClick={() => setPage((p) => p + 1)}>
+                        Next
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

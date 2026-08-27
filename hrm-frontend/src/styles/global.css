@@ -46,17 +46,6 @@ body {
     z-index: 0;
 }
 
-.main-content::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-        linear-gradient(180deg, rgba(244, 246, 251, 0.64) 0%, rgba(244, 246, 251, 0.12) 24%, rgba(244, 246, 251, 0.92) 76%, rgba(244, 246, 251, 0.98) 100%),
-        radial-gradient(circle at top left, rgba(212, 175, 55, 0.1), transparent 28%);
-    pointer-events: none;
-    z-index: 0;
-}
-
 .main-content > * {
     position: relative;
     z-index: 1;
@@ -141,7 +130,11 @@ body {
 }
 
 .route-admin::before {
-    background-image: url("../assets/page-art/people.svg");
+    background-image: url("https://res.cloudinary.com/nqb1tl4u/image/upload/v1787656736/1.jpg");
+    background-position: center center;
+    background-size: cover;
+    opacity: 1;
+    filter: saturate(0.98) contrast(1.03);
 }
 
 .route-create::before,
@@ -621,6 +614,24 @@ body {
     background-position: center;
     opacity: 1;
     pointer-events: none;
+    transform-origin: center center;
+    will-change: transform;
+    animation: kenburns 15s ease-in-out infinite alternate;
+}
+
+@keyframes kenburns {
+    0% {
+        transform: scale(1.12) translate(2%, 1.5%);
+    }
+    100% {
+        transform: scale(1.26) translate(-3%, -2.5%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .login-page::before {
+        animation: none;
+    }
 }
 
 .login-page::after {

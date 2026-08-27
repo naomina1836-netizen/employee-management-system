@@ -1,6 +1,6 @@
-import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useConfirm } from "../context/ConfirmContext";
 import {
     LayoutDashboard,
     Users,
@@ -13,17 +13,23 @@ import {
     UserCircle2,
     LogOut,
     ShieldCheck,
-    X,
+    UserCog,
 } from "lucide-react";
 
 function Sidebar() {
     const { user, logout } = useAuth();
-    const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+    const confirm = useConfirm();
     const attendancePath = user?.role === "Employee" ? "/attendance/self" : "/attendance";
 
-    const handleLogout = () => {
-        setLogoutDialogOpen(false);
-        logout();
+    const handleLogout = async () => {
+        const confirmed = await confirm({
+            title: "Log out",
+            message: "Are you sure you want to logout?",
+            confirmText: "Logout"
+        });
+        if (confirmed) {
+            logout();
+        }
     };
 
     const navItems = [
@@ -35,6 +41,7 @@ function Sidebar() {
         { path: "/performance", label: "Performance", icon: Star },
         { path: "/notifications", label: "Notifications", icon: Bell },
         { path: "/reports", label: "Reports", icon: BarChart3, roles: ["Admin", "HR"] },
+        { path: "/admin/users", label: "User Management", icon: UserCog, roles: ["Admin", "HR"] },
         { path: "/profile", label: "Profile", icon: UserCircle2 }
     ];
 
@@ -81,45 +88,13 @@ function Sidebar() {
                     </span>
                     <span className="user-email">{user?.email}</span>
                 </div>
-                <button onClick={() => setLogoutDialogOpen(true)} className="logout-btn">
+                <button onClick={handleLogout} className="logout-btn">
                     <LogOut size={16} strokeWidth={2.2} />
                     Logout
                 </button>
                 </div>
             </div>
 
-            {logoutDialogOpen && (
-                <div
-                    className="modal-overlay"
-                    role="presentation"
-                    onMouseDown={(event) => {
-                        if (event.target === event.currentTarget) setLogoutDialogOpen(false);
-                    }}
-                >
-                    <section className="modal-content" role="dialog" aria-modal="true" aria-labelledby="logout-dialog-title">
-                        <button
-                            type="button"
-                            className="modal-close"
-                            onClick={() => setLogoutDialogOpen(false)}
-                            aria-label="Close logout dialog"
-                        >
-                            <X size={18} />
-                        </button>
-                        <span className="eyebrow">Secure session</span>
-                        <h2 id="logout-dialog-title">Ready to sign out?</h2>
-                        <p>Your session will end on this device. You can sign in again whenever you need to continue.</p>
-                        <div className="modal-actions">
-                            <button type="button" className="btn-secondary" onClick={() => setLogoutDialogOpen(false)}>
-                                Stay signed in
-                            </button>
-                            <button type="button" className="logout-btn logout-confirm" onClick={handleLogout}>
-                                <LogOut size={16} strokeWidth={2.2} />
-                                Sign out
-                            </button>
-                        </div>
-                    </section>
-                </div>
-            )}
         </>
     );
 }

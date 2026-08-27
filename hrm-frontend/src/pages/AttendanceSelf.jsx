@@ -27,7 +27,6 @@ function AttendanceSelf() {
     async function handleCheckIn() {
         try {
             await api.post("/attendance/self/check-in");
-            toast.success("Checked in successfully!");
             loadTodayAttendance();
         } catch (error) {
             console.error("Error checking in:", error);
@@ -38,7 +37,6 @@ function AttendanceSelf() {
     async function handleCheckOut() {
         try {
             await api.post("/attendance/self/check-out");
-            toast.success("Checked out successfully!");
             loadTodayAttendance();
         } catch (error) {
             console.error("Error checking out:", error);

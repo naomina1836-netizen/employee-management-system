@@ -73,7 +73,6 @@ function EditPayroll() {
 
         try {
             await api.put(`/payroll/${id}`, formData);
-            toast.success("Payroll record updated successfully!");
             navigate(`/payroll/${id}`);
         } catch (error) {
             console.error("Error updating payroll:", error);

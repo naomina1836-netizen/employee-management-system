@@ -74,7 +74,6 @@ function CreatePerformance() {
                 overall_score: overallScore
             };
             await api.post("/performance", data);
-            toast.success("Performance review created successfully!");
             navigate("/performance");
         } catch (error) {
             console.error("Error creating review:", error);

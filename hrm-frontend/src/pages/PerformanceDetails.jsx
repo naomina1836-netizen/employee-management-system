@@ -3,11 +3,13 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import api from "../services/api";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
+import { useConfirm } from "../context/ConfirmContext";
 
 function PerformanceDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
+    const confirm = useConfirm();
     const canEdit = ["Admin", "HR", "Manager"].includes(user?.role);
     const canDelete = ["Admin", "HR"].includes(user?.role);
     const [review, setReview] = useState(null);
@@ -33,12 +35,16 @@ function PerformanceDetails() {
     }
 
     async function handleDelete() {
-        if (!window.confirm("Delete this performance review?")) return;
+        const confirmed = await confirm({
+            title: "Delete performance review",
+            message: "Delete this performance review?",
+            confirmText: "Delete"
+        });
+        if (!confirmed) return;
 
         setDeleting(true);
         try {
             await api.delete(`/performance/${id}`);
-            toast.success("Performance review deleted successfully");
             navigate("/performance");
         } catch (error) {
             console.error("Error deleting review:", error);

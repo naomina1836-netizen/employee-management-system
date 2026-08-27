@@ -44,7 +44,6 @@ function Notifications() {
         try {
             await api.patch("/notifications/read-all");
             setNotifications(notifications.map(n => ({ ...n, is_read: true })));
-            toast.success("All notifications marked as read");
         } catch (error) {
             console.error("Error marking all as read:", error);
         }
