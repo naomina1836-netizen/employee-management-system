@@ -41,7 +41,8 @@ function Sidebar() {
         { path: "/performance", label: "Performance", icon: Star },
         { path: "/notifications", label: "Notifications", icon: Bell },
         { path: "/reports", label: "Reports", icon: BarChart3 },
-        { path: "/admin/users", label: "User Management", icon: UserCog, roles: ["Admin", "HR"] },
+        { path: "/admin/users", label: "User Management", icon: UserCog, roles: ["Admin"] },
+        { path: "/admin/audit-logs", label: "Audit Logs", icon: ClipboardList, roles: ["Admin"] },
         { path: "/profile", label: "Profile", icon: UserCircle2 }
     ];
 

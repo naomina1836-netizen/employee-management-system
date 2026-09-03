@@ -1,4 +1,5 @@
 const db = require("../config/db");
+const mailer = require("../utils/mailer");
 
 exports.getAll = async (req, res) => {
     try {
@@ -106,9 +107,13 @@ exports.updateStatus = async (req, res) => {
         }
 
         const [existing] = await db.query(
-            `SELECT l.*, e.manager_id
+            `SELECT l.*, e.manager_id,
+                    e.email AS employee_email,
+                    CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+                    lt.leave_name
              FROM leave_requests l
              JOIN employees e ON e.employee_id = l.employee_id
+             JOIN leave_types lt ON lt.leave_type_id = l.leave_type_id
              WHERE l.leave_id = ?`,
             [id]
         );
@@ -134,6 +139,18 @@ exports.updateStatus = async (req, res) => {
              FROM users WHERE employee_id = ?`,
             [status, existing[0].employee_id]
         );
+
+        // Fire-and-forget: email the outcome to the requesting employee.
+        if (existing[0].employee_email) {
+            mailer.sendLeaveStatus({
+                to: existing[0].employee_email,
+                name: existing[0].employee_name,
+                status,
+                leaveName: existing[0].leave_name,
+                startDate: existing[0].start_date,
+                endDate: existing[0].end_date
+            });
+        }
 
         res.json({ message: "Leave request status updated successfully" });
 

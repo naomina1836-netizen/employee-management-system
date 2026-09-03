@@ -2,6 +2,9 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
+import SetPassword from "./pages/SetPassword";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import EmployeeList from "./pages/EmployeeList";
@@ -27,6 +30,7 @@ import PerformanceList from "./pages/PerformanceList";
 import Notifications from "./pages/Notifications";
 import Reports from "./pages/Reports";
 import AdminUsers from "./pages/AdminUsers";
+import AdminAuditLogs from "./pages/AdminAuditLogs";
 
 function App() {
     const { user, loading } = useAuth();
@@ -40,6 +44,9 @@ function App() {
             <Routes>
                 <Route path="/" element={<Navigate to="/login" replace />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/set-password" element={<SetPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
         );
@@ -59,7 +66,7 @@ function App() {
                 <Route path="profile" element={<Profile />} />
                 <Route path="employees" element={isStaff ? <EmployeeList /> : <Navigate to="/dashboard" replace />} />
                 <Route path="employees/create" element={isAdminOrHR ? <CreateEmployee /> : <Navigate to="/employees" replace />} />
-                <Route path="employees/edit/:id" element={isAdminOrHR ? <EditEmployee /> : <Navigate to="/employees" replace />} />
+                <Route path="employees/edit/:id" element={user.role === "Admin" ? <EditEmployee /> : <Navigate to="/employees" replace />} />
                 <Route path="employees/:id" element={isStaff ? <EmployeeDetails /> : <Navigate to="/dashboard" replace />} />
                 <Route path="leaves" element={<LeaveList />} />
                 <Route path="leaves/create" element={<CreateLeave />} />
@@ -79,11 +86,16 @@ function App() {
                 <Route path="performance/edit/:id" element={canManagePerformance ? <EditPerformance /> : <Navigate to="/performance" replace />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="reports" element={<Reports />} />
-                {isAdminOrHR && <Route path="admin/users" element={<AdminUsers />} />}
-                {!isAdminOrHR && <Route path="admin/users" element={<Navigate to="/dashboard" replace />} />}
+                {user.role === "Admin" && <Route path="admin/users" element={<AdminUsers />} />}
+                {user.role === "Admin" && <Route path="admin/audit-logs" element={<AdminAuditLogs />} />}
+                {user.role !== "Admin" && <Route path="admin/users" element={<Navigate to="/dashboard" replace />} />}
+                {user.role !== "Admin" && <Route path="admin/audit-logs" element={<Navigate to="/dashboard" replace />} />}
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
             <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/set-password" element={<SetPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
     );
 }

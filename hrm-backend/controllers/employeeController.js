@@ -2,6 +2,9 @@ const db = require("../config/db");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const { parsePagination, paginatedResponse } = require("../utils/pagination");
+const mailer = require("../utils/mailer");
+const { storePasswordSetupRequest } = require("../utils/passwordSetup");
+const { logAuditEvent } = require("../utils/auditLogger");
 
 exports.getAll = async (req, res) => {
     try {
@@ -128,15 +131,24 @@ exports.create = async (req, res) => {
             ]
         );
 
-        await connection.query(
-            `INSERT INTO audit_logs (user_id, action, table_name, record_id) 
-             VALUES (?, 'INSERT', 'employees', ?)`,
-            [req.user.user_id, result.insertId]
-        );
+        await logAuditEvent(connection, {
+            userId: req.user.user_id,
+            action: "CREATE",
+            tableName: "employees",
+            recordId: result.insertId,
+            details: {
+                first_name,
+                last_name,
+                email,
+                department_id: department_id || null,
+                position_id: position_id || null,
+            },
+        });
 
         let accountCreated = false;
         let accountLinked = false;
-        let tempPassword = null;
+        let newLogin = null;
+        let setupUrl = null;
 
         if (existingUsers.length > 0) {
             await connection.query(
@@ -145,9 +157,6 @@ exports.create = async (req, res) => {
             );
             accountLinked = true;
         } else {
-            // Prefer the admin-supplied password; otherwise fall back to a
-            // configured default or a random temporary one.
-            const adminSetPassword = Boolean(password);
             const loginPassword = password || process.env.DEFAULT_EMPLOYEE_PASSWORD || crypto.randomBytes(9).toString("base64url");
             const passwordHash = await bcrypt.hash(loginPassword, 10);
             const username = `employee${result.insertId}`;
@@ -158,13 +167,24 @@ exports.create = async (req, res) => {
                 [username, email, passwordHash, result.insertId]
             );
             accountCreated = true;
-            // Only reveal the password when we generated it; admin-set ones are already known.
-            if (!adminSetPassword) {
-                tempPassword = loginPassword;
-            }
+            newLogin = { email, username };
+            const setupRequest = await storePasswordSetupRequest(connection, result.insertId);
+            setupUrl = setupRequest.setupUrl;
         }
 
         await connection.commit();
+
+        let emailSent = false;
+        if (newLogin) {
+            // Email the setup link after commit so a mail hiccup never rolls back the employee record.
+            emailSent = await mailer.sendPasswordSetupLink({
+                to: newLogin.email,
+                name: `${first_name} ${last_name}`,
+                username: newLogin.username,
+                setupUrl,
+                role: "Employee"
+            });
+        }
 
         res.status(201).json({
             message: accountCreated
@@ -173,7 +193,8 @@ exports.create = async (req, res) => {
             employee_id: result.insertId,
             account_created: accountCreated,
             account_linked: accountLinked,
-            temp_password: tempPassword
+            email_to: newLogin ? newLogin.email : null,
+            email_sent: emailSent
         });
 
     } catch (error) {
@@ -241,11 +262,18 @@ exports.update = async (req, res) => {
             [email, id]
         );
 
-        await db.query(
-            `INSERT INTO audit_logs (user_id, action, table_name, record_id) 
-             VALUES (?, 'UPDATE', 'employees', ?)`,
-            [req.user.user_id, id]
-        );
+        await logAuditEvent(db, {
+            userId: req.user.user_id,
+            action: "UPDATE",
+            tableName: "employees",
+            recordId: Number(id),
+            details: {
+                first_name,
+                last_name,
+                email,
+                employment_status: employment_status || "Active",
+            },
+        });
 
         res.json({ message: "Employee updated successfully" });
 
@@ -273,11 +301,12 @@ exports.delete = async (req, res) => {
             [id]
         );
 
-        await db.query(
-            `INSERT INTO audit_logs (user_id, action, table_name, record_id) 
-             VALUES (?, 'DELETE', 'employees', ?)`,
-            [req.user.user_id, id]
-        );
+        await logAuditEvent(db, {
+            userId: req.user.user_id,
+            action: "DELETE",
+            tableName: "employees",
+            recordId: Number(id),
+        });
 
         res.json({ message: "Employee deleted successfully" });
 

@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 function CreateEmployee() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
-    const [createdPassword, setCreatedPassword] = useState(null);
+    const [result, setResult] = useState(null);
     const [departments, setDepartments] = useState([]);
     const [positions, setPositions] = useState([]);
     const [employees, setEmployees] = useState([]);
@@ -91,8 +91,11 @@ function CreateEmployee() {
 
         try {
             const response = await api.post("/employees", formData);
-            if (response.data.temp_password) {
-                setCreatedPassword(response.data.temp_password);
+            if (response.data.account_created) {
+                setResult({
+                    email: response.data.email_to || null,
+                    emailSent: response.data.email_sent
+                });
             } else {
                 navigate("/employees");
             }
@@ -182,7 +185,7 @@ function CreateEmployee() {
                             autoComplete="new-password"
                         />
                         <small className="form-hint">
-                            Sets the new login account's password. Leave blank to auto-generate a temporary one.
+                            Optional initial password for the employee account. If you leave it blank, the system generates one automatically.
                         </small>
                     </div>
 
@@ -288,23 +291,29 @@ function CreateEmployee() {
                 </form>
             </div>
 
-            {createdPassword && (
+            {result && (
                 <div className="modal-overlay">
                     <div className="modal-content" onClick={(event) => event.stopPropagation()}>
                         <h2>Employee created</h2>
-                        <p>
-                            A login account was created automatically. Share this temporary
-                            password with the employee &mdash; it won&apos;t be shown again.
-                        </p>
-                        <p style={{ fontSize: "1.25rem", fontFamily: "monospace", letterSpacing: "0.05em" }}>
-                            <strong>{createdPassword}</strong>
-                        </p>
+                        <p>A password setup link was generated for the new login account.</p>
+                        {result.email && (
+                            result.emailSent ? (
+                                <p style={{ color: "#15803d" }}>
+                                    Setup link email sent to <strong>{result.email}</strong> &#10003;
+                                </p>
+                            ) : (
+                                <p style={{ color: "#b91c1c" }}>
+                                    Setup link email not sent to <strong>{result.email}</strong>.
+                                    Check the server mail settings.
+                                </p>
+                            )
+                        )}
                         <div className="modal-actions">
                             <button
                                 type="button"
                                 className="btn-primary"
                                 onClick={() => {
-                                    setCreatedPassword(null);
+                                    setResult(null);
                                     navigate("/employees");
                                 }}
                             >

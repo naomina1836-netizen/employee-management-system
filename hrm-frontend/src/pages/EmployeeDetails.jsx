@@ -15,7 +15,7 @@ function EmployeeDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
-    const canEdit = ["Admin", "HR"].includes(user?.role);
+    const canEdit = user?.role === "Admin";
     const [employee, setEmployee] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -56,6 +56,19 @@ function EmployeeDetails() {
                     {canEdit && <Link to={`/employees/edit/${employee.employee_id}`} className="btn-primary">
                         Edit Employee
                     </Link>}
+                    {canEdit && (
+                        <>
+                            <Link
+                                to={`/admin/audit-logs?table_name=employees&record_id=${employee.employee_id}`}
+                                className="btn-secondary"
+                            >
+                                View Audit
+                            </Link>
+                            <span className="permission-hint" style={{ alignSelf: "center" }}>
+                                Admin only
+                            </span>
+                        </>
+                    )}
                     <button className="btn-secondary" onClick={() => navigate("/employees")}>
                         Back to List
                     </button>

@@ -141,6 +141,45 @@ async function syncSchemaMigrations(connection) {
   );
 
   console.log("Leave types synchronized.");
+
+    if (await tableExists(connection, "users")) {
+    const userColumns = [
+      ["password_setup_token_hash", "VARCHAR(255) NULL"],
+      ["password_setup_expires_at", "DATETIME NULL"],
+      ["password_setup_requested_at", "DATETIME NULL"],
+      ["password_setup_completed_at", "DATETIME NULL"],
+      ["password_reset_token_hash", "VARCHAR(255) NULL"],
+      ["password_reset_expires_at", "DATETIME NULL"],
+      ["password_reset_requested_at", "DATETIME NULL"],
+      ["password_reset_completed_at", "DATETIME NULL"],
+    ];
+
+    for (const [columnName, definition] of userColumns) {
+      if (!(await columnExists(connection, "users", columnName))) {
+        await connection.query(
+          `
+          ALTER TABLE users
+          ADD COLUMN ${columnName} ${definition}
+          `
+        );
+
+        console.log(`Added users.${columnName} to the existing database.`);
+      }
+    }
+  }
+
+  if (await tableExists(connection, "audit_logs")) {
+    if (!(await columnExists(connection, "audit_logs", "details"))) {
+      await connection.query(
+        `
+        ALTER TABLE audit_logs
+        ADD COLUMN details TEXT NULL
+        `
+      );
+
+      console.log("Added audit_logs.details to the existing database.");
+    }
+  }
 }
 
 async function seedDefaultAdmin(connection) {

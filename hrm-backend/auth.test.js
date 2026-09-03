@@ -49,6 +49,7 @@ describe("Access helpers", () => {
     canModifyEmployee,
     canAccessEmployee
   } = require("./utils/access");
+  const { canPerform } = require("./utils/permissions");
 
   test("Admin/HR are privileged", () => {
     expect(isPrivileged("Admin")).toBe(true);
@@ -65,6 +66,13 @@ describe("Access helpers", () => {
   test("Admin can modify anyone", () => {
     const user = { role: "Admin", employee_id: 1 };
     expect(canModifyEmployee(user, 99)).toBe(true);
+  });
+
+  test("permission helper allows admins and blocks employees for admin-only actions", () => {
+    expect(canPerform({ role: "Admin" }, "viewAuditLogs")).toBe(true);
+    expect(canPerform({ role: "Employee" }, "viewAuditLogs")).toBe(false);
+    expect(canPerform({ role: "HR" }, "createUsers")).toBe(true);
+    expect(canPerform({ role: "HR" }, "manageUsers")).toBe(false);
   });
 });
 

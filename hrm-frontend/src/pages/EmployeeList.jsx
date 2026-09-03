@@ -18,6 +18,7 @@ function EmployeeList() {
     const [pageInfo, setPageInfo] = useState(null);
     const { user } = useAuth();
     const canManageEmployees = ["Admin", "HR"].includes(user?.role);
+    const canEditEmployees = user?.role === "Admin";
 
     useEffect(() => {
         loadLookupData();
@@ -191,7 +192,12 @@ function EmployeeList() {
                                     </td>
                                     <td>
                                         <Link to={`/employees/${emp.employee_id}`} className="btn-sm">View</Link>
-                                        {canManageEmployees && <Link to={`/employees/edit/${emp.employee_id}`} className="btn-sm btn-edit">Edit</Link>}
+                                        {canEditEmployees && <Link to={`/employees/edit/${emp.employee_id}`} className="btn-sm btn-edit">Edit</Link>}
+                                        {canEditEmployees && (
+                                            <span className="permission-hint" style={{ marginLeft: "8px" }}>
+                                                Admin only
+                                            </span>
+                                        )}
                                     </td>
                                 </tr>
                             ))
