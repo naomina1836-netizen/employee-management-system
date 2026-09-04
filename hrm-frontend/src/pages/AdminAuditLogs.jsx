@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import api from "../services/api";
 import toast from "react-hot-toast";
@@ -10,6 +10,8 @@ const DEFAULT_FILTERS = {
     table_name: "",
     from_date: "",
     to_date: "",
+    user_id: "",
+    record_id: "",
 };
 
 const ACTION_OPTIONS = [
@@ -47,39 +49,39 @@ function readFilters(params) {
     };
 }
 
+function buildParams(filters, extra = {}) {
+    const params = {
+        ...extra,
+        ...filters,
+    };
+
+    Object.keys(params).forEach((key) => {
+        if (params[key] === "" || params[key] === null || params[key] === undefined) {
+            delete params[key];
+        }
+    });
+
+    return params;
+}
+
 function AdminAuditLogs() {
     const [searchParams, setSearchParams] = useSearchParams();
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [pagination, setPagination] = useState(null);
-    const [urlKey, setUrlKey] = useState(searchParams.toString());
-    const initialFilters = readFilters(searchParams);
-    const [filters, setFilters] = useState(initialFilters);
+    const [filters, setFilters] = useState(() => ({ ...DEFAULT_FILTERS, ...readFilters(searchParams) }));
     const [selectedLog, setSelectedLog] = useState(null);
     const [showDetails, setShowDetails] = useState(false);
-
-    const activeFilters = (nextFilters = filters) => {
-        const params = {
-            page: 1,
-            limit: 20,
-            ...nextFilters,
-        };
-
-        Object.keys(params).forEach((key) => {
-            if (params[key] === "") {
-                delete params[key];
-            }
-        });
-
-        return params;
-    };
+    const skipSearchSyncRef = useRef(false);
 
     const loadLogs = async (nextPage = page, nextFilters = filters) => {
         setLoading(true);
         try {
-            const params = activeFilters(nextFilters);
-            params.page = nextPage;
+            const params = buildParams(nextFilters, {
+                page: nextPage,
+                limit: 20,
+            });
 
             const response = await api.get("/admin/audit-logs", {
                 params,
@@ -104,31 +106,34 @@ function AdminAuditLogs() {
 
     const applyFilters = (e) => {
         e.preventDefault();
-        setSearchParams(activeFilters(filters));
+        const nextFilters = { ...DEFAULT_FILTERS, ...filters };
+        skipSearchSyncRef.current = true;
+        setPage(1);
+        setSearchParams(buildParams(nextFilters, { page: 1, limit: 20 }));
+        loadLogs(1, nextFilters);
     };
 
     const clearFilters = () => {
-        setFilters(DEFAULT_FILTERS);
-        setSearchParams({});
+        const nextFilters = { ...DEFAULT_FILTERS };
+        skipSearchSyncRef.current = true;
+        setFilters(nextFilters);
+        setPage(1);
+        setSearchParams({ page: 1, limit: 20 });
+        loadLogs(1, nextFilters);
     };
 
     useEffect(() => {
-        const nextUrlKey = searchParams.toString();
-        if (nextUrlKey === urlKey) {
+        const nextFilters = readFilters(searchParams);
+        setFilters((current) => ({ ...DEFAULT_FILTERS, ...nextFilters }));
+        if (skipSearchSyncRef.current) {
+            skipSearchSyncRef.current = false;
             return;
         }
 
-        const nextFilters = readFilters(searchParams);
-        setUrlKey(nextUrlKey);
-        setFilters(nextFilters);
+        setPage(1);
         loadLogs(1, nextFilters);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchParams, urlKey]);
-
-    useEffect(() => {
-        loadLogs(1, initialFilters);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [searchParams]);
 
     const formatDetails = (details) => {
         if (!details) {
@@ -161,10 +166,7 @@ function AdminAuditLogs() {
 
     const handleExportCsv = async () => {
         try {
-            const params = activeFilters(filters);
-            delete params.page;
-            delete params.limit;
-            params.format = "csv";
+            const params = buildParams(filters, { format: "csv" });
 
             const response = await api.get("/admin/audit-logs", {
                 params,
@@ -220,11 +222,11 @@ function AdminAuditLogs() {
                         <Download size={16} strokeWidth={2.2} style={{ marginRight: "0.35rem" }} />
                         Export CSV
                     </button>
-                    <button className="btn-secondary" onClick={clearFilters}>
+                    <button type="button" className="btn-secondary" onClick={clearFilters}>
                         <FilterX size={16} strokeWidth={2.2} style={{ marginRight: "0.35rem" }} />
                         Clear Filters
                     </button>
-                    <button className="btn-secondary" onClick={() => loadLogs(page)}>
+                    <button type="button" className="btn-secondary" onClick={() => loadLogs(page)}>
                         Refresh
                     </button>
                 </div>
@@ -355,6 +357,7 @@ function AdminAuditLogs() {
 
             <div className="form-actions" style={{ marginTop: "1rem" }}>
                 <button
+                    type="button"
                     className="btn-secondary"
                     onClick={() => loadLogs(Math.max(1, page - 1))}
                     disabled={page <= 1}
@@ -367,6 +370,7 @@ function AdminAuditLogs() {
                     {pagination?.total ? ` · ${pagination.total} entries` : ""}
                 </span>
                 <button
+                    type="button"
                     className="btn-secondary"
                     onClick={() => loadLogs((pagination?.page || page) + 1)}
                     disabled={pagination ? pagination.page >= pagination.totalPages : logs.length === 0}
@@ -385,7 +389,7 @@ function AdminAuditLogs() {
                                     Entry #{selectedLog.audit_log_id}
                                 </p>
                             </div>
-                            <button className="btn-secondary" onClick={closeDetails}>
+                            <button type="button" className="btn-secondary" onClick={closeDetails}>
                                 Close
                             </button>
                         </div>

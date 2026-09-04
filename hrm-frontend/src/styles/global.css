@@ -281,6 +281,57 @@ body {
     margin: 0;
 }
 
+.forgot-password-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.forgot-password-page::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("https://res.cloudinary.com/nqb1tl4u/image/upload/v1787064161/loginpage1.jpg");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    opacity: 1;
+    pointer-events: none;
+    transform-origin: center center;
+    will-change: transform;
+    animation: kenburns 15s ease-in-out infinite alternate;
+}
+
+.forgot-password-page::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: transparent;
+    pointer-events: none;
+}
+
+.forgot-password-page .login-container {
+    grid-template-columns: 1fr;
+    max-width: 520px;
+    min-height: auto;
+}
+
+.forgot-password-page .login-form-container {
+    width: 100%;
+}
+
+.forgot-password-page .login-error--success {
+    background: rgba(236, 253, 245, 0.92);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    color: #166534;
+}
+
 .page-container {
     max-width: 1240px;
     margin: 0 auto;
@@ -630,6 +681,10 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
     .login-page::before {
+        animation: none;
+    }
+
+    .forgot-password-page::before {
         animation: none;
     }
 }
@@ -1186,6 +1241,57 @@ body {
 .form-footer p {
     color: rgba(255, 255, 255, 0.78);
     font-size: 13px;
+}
+
+.auth-actions {
+    margin-top: 18px;
+}
+
+.auth-link-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 12px 18px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.09);
+    color: rgba(255, 255, 255, 0.92);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-actions .auth-link-button {
+    display: flex;
+    width: 100%;
+}
+
+.auth-link-button:hover {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(212, 175, 55, 0.38);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px rgba(18, 24, 40, 0.18);
+}
+
+.auth-link-button:active {
+    transform: translateY(0);
+}
+
+.auth-link-button--light {
+    border-color: rgba(26, 26, 46, 0.12);
+    background: rgba(26, 26, 46, 0.04);
+    color: #1a1a2e;
+}
+
+.auth-link-button--light:hover {
+    border-color: rgba(26, 26, 46, 0.16);
+    background: rgba(26, 26, 46, 0.08);
+    color: #1a1a2e;
+    box-shadow: 0 8px 18px rgba(18, 24, 40, 0.08);
 }
 
 /* ===========================
@@ -1803,6 +1909,16 @@ body {
     
     .filter-section {
         flex-direction: column;
+    }
+
+    .recovery-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .recovery-actions .btn-primary,
+    .recovery-actions .auth-link-button {
+        width: 100%;
     }
 }
 

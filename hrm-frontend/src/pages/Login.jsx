@@ -126,8 +126,8 @@ function Login() {
                             </button>
                         </form>
 
-                        <div className="form-footer" style={{ marginTop: "1rem" }}>
-                            <Link to="/forgot-password" style={{ color: "#1d4ed8", fontWeight: 600, textDecoration: "none" }}>
+                        <div className="auth-actions">
+                            <Link to="/forgot-password" className="auth-link-button">
                                 Forgot your password?
                             </Link>
                         </div>

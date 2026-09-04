@@ -1,6 +1,44 @@
 const db = require("../config/db");
 const { parsePagination, paginatedResponse } = require("../utils/pagination");
 
+let auditLogColumnsPromise = null;
+
+async function getAuditLogColumns() {
+    if (!auditLogColumnsPromise) {
+        auditLogColumnsPromise = (async () => {
+            const [rows] = await db.query(
+                `
+                SELECT COLUMN_NAME
+                FROM information_schema.columns
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'audit_logs'
+                `
+            );
+
+            const columns = new Set(rows.map((row) => row.COLUMN_NAME));
+
+            return {
+                idColumn: columns.has("audit_log_id")
+                    ? "audit_log_id"
+                    : columns.has("log_id")
+                        ? "log_id"
+                        : "audit_log_id",
+                createdAtColumn: columns.has("created_at")
+                    ? "created_at"
+                    : columns.has("action_time")
+                        ? "action_time"
+                        : "created_at",
+                hasDetails: columns.has("details"),
+            };
+        })().catch((error) => {
+            auditLogColumnsPromise = null;
+            throw error;
+        });
+    }
+
+    return auditLogColumnsPromise;
+}
+
 function escapeCsv(value) {
     const text = value === null || value === undefined ? "" : String(value);
     if (/[",\n\r]/.test(text)) {
@@ -44,6 +82,11 @@ function buildCsv(rows) {
 
 exports.getAuditLogs = async (req, res) => {
     try {
+        const schema = await getAuditLogColumns();
+        const idExpr = `a.${schema.idColumn}`;
+        const createdAtExpr = `a.${schema.createdAtColumn}`;
+        const detailsExpr = schema.hasDetails ? "a.details" : "NULL";
+
         const wantsPagination = req.query.page !== undefined || req.query.limit !== undefined;
         const where = [];
         const params = [];
@@ -63,7 +106,7 @@ exports.getAuditLogs = async (req, res) => {
                 a.action LIKE ?
                 OR a.table_name LIKE ?
                 OR CAST(a.record_id AS CHAR) LIKE ?
-                OR COALESCE(a.details, '') LIKE ?
+                OR COALESCE(${detailsExpr}, '') LIKE ?
                 OR COALESCE(u.username, '') LIKE ?
                 OR COALESCE(u.email, '') LIKE ?
             )`);
@@ -105,8 +148,9 @@ exports.getAuditLogs = async (req, res) => {
         `;
 
         const selectQuery = `
-            SELECT a.audit_log_id, a.user_id, a.action, a.table_name, a.record_id, a.details,
-                   a.created_at, u.username, u.email, u.role
+            SELECT ${idExpr} AS audit_log_id, a.user_id, a.action, a.table_name, a.record_id,
+                   ${detailsExpr} AS details, ${createdAtExpr} AS created_at,
+                   u.username, u.email, u.role
         `;
 
         const wantsCsv = String(req.query.format || "").toLowerCase() === "csv";
@@ -116,7 +160,7 @@ exports.getAuditLogs = async (req, res) => {
                 `
                 ${selectQuery}
                 ${baseQuery}
-                ORDER BY a.audit_log_id DESC
+                ORDER BY ${idExpr} DESC
                 `,
                 params
             );
@@ -131,7 +175,7 @@ exports.getAuditLogs = async (req, res) => {
                 `
                 ${selectQuery}
                 ${baseQuery}
-                ORDER BY a.audit_log_id DESC
+                ORDER BY ${idExpr} DESC
                 LIMIT 200
                 `,
                 params
@@ -148,7 +192,7 @@ exports.getAuditLogs = async (req, res) => {
             `
             ${selectQuery}
             ${baseQuery}
-            ORDER BY a.audit_log_id DESC
+            ORDER BY ${idExpr} DESC
             LIMIT ${limit} OFFSET ${offset}
             `,
             params

@@ -122,11 +122,11 @@ function ResetPassword() {
                                 />
                             </div>
 
-                            <div className="form-actions full-width">
+                            <div className="form-actions full-width recovery-actions">
                                 <button type="submit" className="btn-primary" disabled={loading || !token}>
                                     {loading ? "Saving..." : "Reset Password"}
                                 </button>
-                                <Link to="/login" className="btn-secondary" style={{ textDecoration: "none" }}>
+                                <Link to="/login" className="auth-link-button auth-link-button--light">
                                     Back to Login
                                 </Link>
                             </div>

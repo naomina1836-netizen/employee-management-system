@@ -29,45 +29,47 @@ function ForgotPassword() {
     };
 
     return (
-        <div className="page-container" style={{ maxWidth: "680px", margin: "0 auto" }}>
-            <div className="page-header">
-                <h1>Forgot Password</h1>
-            </div>
-
-            <div className="form-container">
-                <form onSubmit={handleSubmit} className="form-grid">
-                    <div className="form-group full-width">
-                        <p style={{ margin: 0, color: "#4b5563" }}>
-                            Enter your email address and we will send a one-time password reset link if an account exists.
-                        </p>
-                    </div>
-
-                    <div className="form-group full-width">
-                        <label>Email Address *</label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            autoComplete="email"
-                        />
-                    </div>
-
-                    {message && (
-                        <div className="form-group full-width">
-                            <p style={{ margin: 0, color: sent ? "#15803d" : "#b91c1c" }}>{message}</p>
+        <div className="login-page forgot-password-page">
+            <div className="login-container forgot-password-container">
+                <div className="login-form-container">
+                    <div className="login-form-wrapper">
+                        <div className="form-header">
+                            <h2>Forgot Password</h2>
+                            <p>Enter your email address and we will send a one-time password reset link if an account exists.</p>
                         </div>
-                    )}
 
-                    <div className="form-actions full-width">
-                        <button type="submit" className="btn-primary" disabled={loading}>
-                            {loading ? "Sending..." : "Send Reset Link"}
-                        </button>
-                        <Link to="/login" className="btn-secondary" style={{ textDecoration: "none" }}>
-                            Back to Login
-                        </Link>
+                        {message && (
+                            <div className={`login-error ${sent ? "login-error--success" : ""}`}>
+                                {message}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSubmit} className="login-form">
+                            <div className="form-group">
+                                <label>Email Address</label>
+                                <div className="input-wrapper input-wrapper--plain">
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                        autoComplete="email"
+                                    />
+                                </div>
+                            </div>
+
+                            <button type="submit" className="login-submit" disabled={loading}>
+                                {loading ? "Sending..." : "Send Reset Link"}
+                            </button>
+                        </form>
+
+                        <div className="auth-actions">
+                            <Link to="/login" className="auth-link-button">
+                                Back to Login
+                            </Link>
+                        </div>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     );
