@@ -1,5 +1,6 @@
 CREATE DATABASE IF NOT EXISTS hrm_db;
 USE hrm_db;
+
 -- 1. USERS TABLE (Authentication)
 CREATE TABLE users (
     user_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -9,10 +10,16 @@ CREATE TABLE users (
     role ENUM('Admin', 'HR', 'Manager', 'Employee') DEFAULT 'Employee',
     employee_id INT NULL,
     status ENUM('Active', 'Inactive') DEFAULT 'Active',
+    -- Password setup (onboarding)
     password_setup_token_hash VARCHAR(255) NULL,
     password_setup_expires_at DATETIME NULL,
     password_setup_requested_at DATETIME NULL,
     password_setup_completed_at DATETIME NULL,
+    -- Password reset (forgot password)
+    password_reset_token_hash VARCHAR(255) NULL,
+    password_reset_expires_at DATETIME NULL,
+    password_reset_requested_at DATETIME NULL,
+    password_reset_completed_at DATETIME NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_username (username),
     INDEX idx_email (email),
@@ -20,6 +27,7 @@ CREATE TABLE users (
     INDEX idx_status (status),
     INDEX idx_employee (employee_id)
 );
+
 -- 2. DEPARTMENTS TABLE
 CREATE TABLE departments (
     department_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -28,6 +36,7 @@ CREATE TABLE departments (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_department_name (department_name)
 );
+
 -- 3. POSITIONS TABLE
 CREATE TABLE positions (
     position_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -39,6 +48,7 @@ CREATE TABLE positions (
     INDEX idx_title (title),
     INDEX idx_department (department_id)
 );
+
 -- 4. EMPLOYEES TABLE
 CREATE TABLE employees (
     employee_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -71,6 +81,7 @@ CREATE TABLE employees (
 ALTER TABLE users
     ADD CONSTRAINT fk_users_employee
     FOREIGN KEY (employee_id) REFERENCES employees(employee_id) ON DELETE SET NULL;
+
 -- 5. ATTENDANCE TABLE
 CREATE TABLE attendance (
     attendance_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -88,6 +99,7 @@ CREATE TABLE attendance (
     INDEX idx_status (status),
     UNIQUE KEY unique_attendance (employee_id, attendance_date)
 );
+
 -- 6. LEAVE TYPES TABLE
 CREATE TABLE leave_types (
     leave_type_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -96,6 +108,7 @@ CREATE TABLE leave_types (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_leave_name (leave_name)
 );
+
 -- 7. LEAVE REQUESTS TABLE
 CREATE TABLE leave_requests (
     leave_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -117,6 +130,7 @@ CREATE TABLE leave_requests (
     INDEX idx_status (status),
     INDEX idx_dates (start_date, end_date)
 );
+
 -- 8. PAYROLL TABLE
 CREATE TABLE payroll (
     payroll_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -137,6 +151,7 @@ CREATE TABLE payroll (
     INDEX idx_month_year (month, year),
     UNIQUE KEY unique_payroll (employee_id, month, year)
 );
+
 -- 9. PERFORMANCE REVIEWS TABLE
 CREATE TABLE performance_reviews (
     review_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -149,7 +164,7 @@ CREATE TABLE performance_reviews (
     punctuality_score INT CHECK (punctuality_score BETWEEN 1 AND 5),
     leadership_score INT CHECK (leadership_score BETWEEN 1 AND 5),
     comments TEXT,
-    overall_score DECIMAL(5,2),
+    overall_score DECIMAL(5,2) CHECK (overall_score IS NULL OR (overall_score >= 1 AND overall_score <= 5)),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (employee_id) REFERENCES employees(employee_id) ON DELETE CASCADE,
@@ -158,6 +173,7 @@ CREATE TABLE performance_reviews (
     INDEX idx_reviewer (reviewer_id),
     INDEX idx_date (review_date)
 );
+
 -- 10. NOTIFICATIONS TABLE
 CREATE TABLE notifications (
     notification_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -170,6 +186,7 @@ CREATE TABLE notifications (
     INDEX idx_user (user_id),
     INDEX idx_read (is_read)
 );
+
 -- 11. AUDIT LOGS TABLE
 CREATE TABLE audit_logs (
     log_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -177,6 +194,7 @@ CREATE TABLE audit_logs (
     action VARCHAR(100) NOT NULL,
     table_name VARCHAR(100) NOT NULL,
     record_id INT,
+    details TEXT NULL,
     action_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL,
     INDEX idx_user (user_id),
