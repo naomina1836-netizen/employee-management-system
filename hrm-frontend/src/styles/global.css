@@ -147,14 +147,32 @@ body {
 =========================== */
 .sidebar {
     width: 260px;
-    background: linear-gradient(180deg, #141824 0%, #1a1a2e 55%, #101423 100%);
+    background:
+        linear-gradient(180deg, rgba(12, 16, 28, 0.66) 0%, rgba(18, 20, 35, 0.54) 50%, rgba(10, 14, 25, 0.76) 100%),
+        url("https://res.cloudinary.com/nqb1tl4u/image/upload/v1787064161/loginpage1.jpg") center center / cover no-repeat,
+        #101423;
     color: #fff;
     position: fixed;
     height: 100vh;
+    max-height: 100vh;
     display: flex;
     flex-direction: column;
     padding: 20px 0;
     box-shadow: 8px 0 32px rgba(15, 18, 31, 0.18);
+    overflow: hidden;
+}
+
+.sidebar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(7, 10, 20, 0.28), rgba(7, 10, 20, 0.08));
+    pointer-events: none;
+}
+
+.sidebar > * {
+    position: relative;
+    z-index: 1;
 }
 
 .sidebar-header {
@@ -185,6 +203,24 @@ body {
 .sidebar-nav {
     flex: 1;
     padding: 20px 10px;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(212, 175, 55, 0.6) rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-nav::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(212, 175, 55, 0.6);
+    border-radius: 999px;
 }
 
 .nav-link {
@@ -231,6 +267,9 @@ body {
 .sidebar-footer {
     padding: 20px;
     border-top: 1px solid rgba(255,255,255,0.1);
+    flex-shrink: 0;
+    background: rgba(10, 14, 25, 0.82);
+    backdrop-filter: blur(8px);
 }
 
 .user-info {
@@ -1423,9 +1462,40 @@ body {
     
     .sidebar-header h2,
     .nav-label,
-    .user-info,
-    .logout-btn {
+    .user-info {
         display: none;
+    }
+
+    .sidebar-header {
+        padding: 0 8px 12px;
+    }
+
+    .sidebar-nav {
+        padding: 12px 8px;
+    }
+
+    .nav-link {
+        justify-content: center;
+        padding: 12px 0;
+    }
+
+    .nav-icon {
+        margin-right: 0;
+    }
+
+    .sidebar-footer {
+        padding: 10px 8px;
+    }
+
+    .logout-btn {
+        min-height: 40px;
+        padding: 10px 0;
+        font-size: 0;
+    }
+
+    .logout-btn svg {
+        width: 18px;
+        height: 18px;
     }
     
     .main-content {
