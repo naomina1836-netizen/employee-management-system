@@ -1,21 +1,20 @@
 const db = require("../config/db");
-const { getManagerDepartmentId, managerCanAccessEmployee } = require("../utils/departmentAccess");
+const { managerScope } = require("../utils/access");
+const { calculateHoursWorked } = require("../utils/workflowRules");
 
 exports.getAll = async (req, res) => {
     try {
-        let query = `SELECT a.*,
+        const scope = managerScope(req.user, "e");
+        const [attendance] = await db.query(
+            `SELECT a.*, 
                     CONCAT(e.first_name, ' ', e.last_name) as employee_name
              FROM attendance a
              JOIN employees e ON a.employee_id = e.employee_id
-             WHERE 1=1`;
-        const params = [];
-        const departmentId = await getManagerDepartmentId(req.user);
-        if (departmentId !== null) {
-            query += " AND e.department_id = ?";
-            params.push(departmentId);
-        }
-        query += " ORDER BY a.attendance_date DESC, a.attendance_id DESC";
-        const [attendance] = await db.query(query, params);
+             WHERE 1=1
+             ${scope.clause}
+             ORDER BY a.attendance_date DESC, a.attendance_id DESC`,
+            scope.params
+        );
 
         res.json(attendance);
 
@@ -33,10 +32,7 @@ exports.getByEmployee = async (req, res) => {
             (!req.user.employee_id || Number(employeeId) !== Number(req.user.employee_id))) {
             return res.status(403).json({ message: "You can only view your own attendance records" });
         }
-
-        if (req.user.role === "Manager" && !(await managerCanAccessEmployee(req.user, employeeId))) {
-            return res.status(403).json({ message: "You can only view attendance for your department" });
-        }
+        const scope = managerScope(req.user, "e");
 
         const [attendance] = await db.query(
             `SELECT a.*, 
@@ -44,8 +40,9 @@ exports.getByEmployee = async (req, res) => {
              FROM attendance a
              JOIN employees e ON a.employee_id = e.employee_id
              WHERE a.employee_id = ?
+             ${scope.clause}
              ORDER BY a.attendance_date DESC`,
-            [employeeId]
+            [employeeId, ...scope.params]
         );
 
         res.json(attendance);
@@ -59,22 +56,20 @@ exports.getByEmployee = async (req, res) => {
 exports.getOne = async (req, res) => {
     try {
         const { id } = req.params;
+        const scope = managerScope(req.user, "e");
 
         const [attendance] = await db.query(
             `SELECT a.*, 
                     CONCAT(e.first_name, ' ', e.last_name) as employee_name
              FROM attendance a
              JOIN employees e ON a.employee_id = e.employee_id
-             WHERE a.attendance_id = ?`,
-            [id]
+             WHERE a.attendance_id = ?
+             ${scope.clause}`,
+            [id, ...scope.params]
         );
 
         if (attendance.length === 0) {
             return res.status(404).json({ message: "Attendance record not found" });
-        }
-
-        if (req.user.role === "Manager" && !(await managerCanAccessEmployee(req.user, attendance[0].employee_id))) {
-            return res.status(403).json({ message: "You can only view attendance for your department" });
         }
 
         res.json(attendance[0]);
@@ -92,10 +87,7 @@ exports.getMonthly = async (req, res) => {
             (!req.user.employee_id || Number(employeeId) !== Number(req.user.employee_id))) {
             return res.status(403).json({ message: "You can only view your own attendance records" });
         }
-
-        if (req.user.role === "Manager" && !(await managerCanAccessEmployee(req.user, employeeId))) {
-            return res.status(403).json({ message: "You can only view attendance for your department" });
-        }
+        const scope = managerScope(req.user, "e");
 
         const [attendance] = await db.query(
             `SELECT a.*, 
@@ -105,8 +97,9 @@ exports.getMonthly = async (req, res) => {
              WHERE a.employee_id = ? 
              AND MONTH(a.attendance_date) = ? 
              AND YEAR(a.attendance_date) = ?
+             ${scope.clause}
              ORDER BY a.attendance_date`,
-            [employeeId, month, year]
+            [employeeId, month, year, ...scope.params]
         );
 
         res.json(attendance);
@@ -237,10 +230,11 @@ exports.create = async (req, res) => {
 
         let hours_worked = 0;
         if (check_in && check_out) {
-            const checkInTime = new Date("1970-01-01 " + check_in);
-            const checkOutTime = new Date("1970-01-01 " + check_out);
-            const diffMs = checkOutTime - checkInTime;
-            hours_worked = parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2));
+            const hoursResult = calculateHoursWorked(check_in, check_out);
+            if (!hoursResult.valid) {
+                return res.status(400).json({ message: hoursResult.message });
+            }
+            hours_worked = hoursResult.hours;
         }
 
         const [result] = await db.query(
@@ -277,10 +271,11 @@ exports.update = async (req, res) => {
 
         let hours_worked = existing[0].hours_worked;
         if (check_in && check_out) {
-            const checkInTime = new Date("1970-01-01 " + check_in);
-            const checkOutTime = new Date("1970-01-01 " + check_out);
-            const diffMs = checkOutTime - checkInTime;
-            hours_worked = parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2));
+            const hoursResult = calculateHoursWorked(check_in, check_out);
+            if (!hoursResult.valid) {
+                return res.status(400).json({ message: hoursResult.message });
+            }
+            hours_worked = hoursResult.hours;
         }
 
         await db.query(
@@ -327,6 +322,7 @@ exports.delete = async (req, res) => {
 exports.search = async (req, res) => {
     try {
         const { keyword, status, start_date, end_date } = req.query;
+        const scope = managerScope(req.user, "e");
         
         let query = `
             SELECT a.*, 
@@ -336,13 +332,8 @@ exports.search = async (req, res) => {
             WHERE 1=1
         `;
         
-        const params = [];
-
-        const departmentId = await getManagerDepartmentId(req.user);
-        if (departmentId !== null) {
-            query += " AND e.department_id = ?";
-            params.push(departmentId);
-        }
+        const params = [...scope.params];
+        query += scope.clause;
         
         if (keyword) {
             query += ` AND (e.first_name LIKE ? OR e.last_name LIKE ?)`;
@@ -379,12 +370,16 @@ exports.search = async (req, res) => {
 // GET ATTENDANCE STATISTICS (Report)
 exports.getStats = async (req, res) => {
     try {
+        const scope = managerScope(req.user, "e");
         // By status (this month)
         const [monthlyStats] = await db.query(
             `SELECT status, COUNT(*) as count
-             FROM attendance
+             FROM attendance a
+             JOIN employees e ON a.employee_id = e.employee_id
              WHERE MONTH(attendance_date) = MONTH(CURDATE()) AND YEAR(attendance_date) = YEAR(CURDATE())
-             GROUP BY status`
+             ${scope.clause}
+             GROUP BY status`,
+            scope.params
         );
         
         // Daily trend (last 7 days)
@@ -393,16 +388,22 @@ exports.getStats = async (req, res) => {
                     SUM(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) as present,
                     SUM(CASE WHEN status = 'Absent' THEN 1 ELSE 0 END) as absent,
                     SUM(CASE WHEN status = 'Late' THEN 1 ELSE 0 END) as late
-             FROM attendance
+             FROM attendance a
+             JOIN employees e ON a.employee_id = e.employee_id
              WHERE attendance_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+             ${scope.clause}
              GROUP BY attendance_date
-             ORDER BY attendance_date`
+             ORDER BY attendance_date`,
+            scope.params
         );
         
         // Total this month
         const [total] = await db.query(
-            `SELECT COUNT(*) as total FROM attendance
-             WHERE MONTH(attendance_date) = MONTH(CURDATE()) AND YEAR(attendance_date) = YEAR(CURDATE())`
+            `SELECT COUNT(*) as total FROM attendance a
+             JOIN employees e ON a.employee_id = e.employee_id
+             WHERE MONTH(attendance_date) = MONTH(CURDATE()) AND YEAR(attendance_date) = YEAR(CURDATE())
+             ${scope.clause}`,
+            scope.params
         );
         
         res.json({
@@ -445,11 +446,13 @@ exports.bulkCreate = async (req, res) => {
 
             let hours_worked = 0;
             if (check_in && check_out) {
-                const checkInTime = new Date("1970-01-01 " + check_in);
-                const checkOutTime = new Date("1970-01-01 " + check_out);
-                const diffMs = checkOutTime - checkInTime;
-                hours_worked = parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2));
-                if (Number.isNaN(hours_worked) || hours_worked < 0) hours_worked = 0;
+                const hoursResult = calculateHoursWorked(check_in, check_out);
+                if (!hoursResult.valid) {
+                    results.skipped += 1;
+                    results.errors.push({ employee_id, message: hoursResult.message });
+                    continue;
+                }
+                hours_worked = hoursResult.hours;
             }
 
             try {

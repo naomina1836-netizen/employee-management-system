@@ -14,6 +14,7 @@ import {
     LogOut,
     ShieldCheck,
     UserCog,
+    Settings as SettingsIcon,
 } from "lucide-react";
 
 function Sidebar() {
@@ -41,7 +42,9 @@ function Sidebar() {
         { path: "/performance", label: "Performance", icon: Star },
         { path: "/notifications", label: "Notifications", icon: Bell },
         { path: "/reports", label: "Reports", icon: BarChart3, roles: ["Admin", "HR"] },
-        { path: "/admin/users", label: "User Management", icon: UserCog, roles: ["Admin", "HR"] },
+        { path: "/settings", label: "Settings", icon: SettingsIcon, roles: ["Admin", "HR"] },
+        { path: "/admin/users", label: "User Management", icon: UserCog, roles: ["Admin"] },
+        { path: "/admin/audit-logs", label: "Audit Logs", icon: ClipboardList, roles: ["Admin"] },
         { path: "/profile", label: "Profile", icon: UserCircle2 }
     ];
 
@@ -56,14 +59,13 @@ function Sidebar() {
     });
 
     return (
-        <>
-            <div className="sidebar">
-                <div className="sidebar-header">
+        <div className="sidebar">
+            <div className="sidebar-header">
                 <h2><ShieldCheck size={22} strokeWidth={2.2} /> HRM</h2>
                 <span className="user-role">{user?.role}</span>
-                </div>
+            </div>
 
-                <nav className="sidebar-nav">
+            <nav className="sidebar-nav">
                 {filteredNav.map((item) => (
                     <NavLink
                         key={item.path}
@@ -78,9 +80,9 @@ function Sidebar() {
                         <span className="nav-label">{item.label}</span>
                     </NavLink>
                 ))}
-                </nav>
+            </nav>
 
-                <div className="sidebar-footer">
+            <div className="sidebar-footer">
                 <div className="user-info">
                     <span className="user-name">
                         <UserCircle2 size={16} strokeWidth={2.2} />
@@ -92,10 +94,8 @@ function Sidebar() {
                     <LogOut size={16} strokeWidth={2.2} />
                     Logout
                 </button>
-                </div>
             </div>
-
-        </>
+        </div>
     );
 }
 

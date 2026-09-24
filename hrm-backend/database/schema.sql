@@ -47,6 +47,14 @@ CREATE TABLE IF NOT EXISTS users (
   role VARCHAR(30) NOT NULL DEFAULT 'Employee',
   employee_id INT UNSIGNED NULL UNIQUE,
   status VARCHAR(30) NOT NULL DEFAULT 'Active',
+  password_setup_token_hash VARCHAR(255) NULL,
+  password_setup_expires_at DATETIME NULL,
+  password_setup_requested_at DATETIME NULL,
+  password_setup_completed_at DATETIME NULL,
+  password_reset_token_hash VARCHAR(255) NULL,
+  password_reset_expires_at DATETIME NULL,
+  password_reset_requested_at DATETIME NULL,
+  password_reset_completed_at DATETIME NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_users_employee FOREIGN KEY (employee_id)
     REFERENCES employees(employee_id) ON DELETE SET NULL
@@ -147,6 +155,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   action VARCHAR(50) NOT NULL,
   table_name VARCHAR(100) NOT NULL,
   record_id INT UNSIGNED NULL,
+  details TEXT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_audit_logs_user FOREIGN KEY (user_id)
     REFERENCES users(user_id) ON DELETE SET NULL

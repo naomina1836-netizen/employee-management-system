@@ -8,7 +8,8 @@
     "dev": "nodemon server.js",
     "test": "jest",
     "check:password": "node test-password.js",
-    "db:sync": "node scripts/sync-db.js"
+    "db:sync": "node scripts/sync-db.js",
+    "mail:test": "node scripts/test-mail.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -16,7 +17,8 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
-    "mysql2": "^3.6.0"
+    "mysql2": "^3.6.0",
+    "nodemailer": "^9.0.5"
   },
   "devDependencies": {
     "jest": "^29.7.0",
@@ -24,6 +26,8 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "setupFiles": ["<rootDir>/setup.js"]
+    "setupFiles": [
+      "<rootDir>/setup.js"
+    ]
   }
 }

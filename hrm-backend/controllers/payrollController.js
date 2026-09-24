@@ -1,7 +1,9 @@
 const db = require("../config/db");
+const { managerScope } = require("../utils/access");
 
 exports.getAll = async (req, res) => {
     try {
+        const scope = managerScope(req.user, "e");
         const [payroll] = await db.query(
             `SELECT p.*, 
                     CONCAT(e.first_name, ' ', e.last_name) as employee_name,
@@ -9,7 +11,10 @@ exports.getAll = async (req, res) => {
              FROM payroll p
              JOIN employees e ON p.employee_id = e.employee_id
              JOIN positions pos ON e.position_id = pos.position_id
-             ORDER BY p.year DESC, FIELD(p.month, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December') DESC`
+             WHERE 1=1
+             ${scope.clause}
+             ORDER BY p.year DESC, FIELD(p.month, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December') DESC`,
+            scope.params
         );
 
         res.json(payroll);
@@ -28,6 +33,7 @@ exports.getByEmployee = async (req, res) => {
             (!req.user.employee_id || Number(employeeId) !== Number(req.user.employee_id))) {
             return res.status(403).json({ message: "You can only view your own payroll records" });
         }
+        const scope = managerScope(req.user, "e");
 
         const [payroll] = await db.query(
             `SELECT p.*, 
@@ -37,8 +43,9 @@ exports.getByEmployee = async (req, res) => {
              JOIN employees e ON p.employee_id = e.employee_id
              JOIN positions pos ON e.position_id = pos.position_id
              WHERE p.employee_id = ?
+             ${scope.clause}
              ORDER BY p.year DESC, FIELD(p.month, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December') DESC`,
-            [employeeId]
+            [employeeId, ...scope.params]
         );
 
         res.json(payroll);
@@ -53,6 +60,7 @@ exports.getOne = async (req, res) => {
     try {
         const { id } = req.params;
 
+        const scope = managerScope(req.user, "e");
         const [payroll] = await db.query(
             `SELECT p.*, 
                     CONCAT(e.first_name, ' ', e.last_name) as employee_name,
@@ -60,8 +68,9 @@ exports.getOne = async (req, res) => {
              FROM payroll p
              JOIN employees e ON p.employee_id = e.employee_id
              JOIN positions pos ON e.position_id = pos.position_id
-             WHERE p.payroll_id = ?`,
-            [id]
+             WHERE p.payroll_id = ?
+             ${scope.clause}`,
+            [id, ...scope.params]
         );
 
         if (payroll.length === 0) {
@@ -235,6 +244,7 @@ exports.generate = async (req, res) => {
 exports.search = async (req, res) => {
     try {
         const { keyword, month, year } = req.query;
+        const scope = managerScope(req.user, "e");
         
         let query = `
             SELECT p.*, 
@@ -246,7 +256,8 @@ exports.search = async (req, res) => {
             WHERE 1=1
         `;
         
-        const params = [];
+        const params = [...scope.params];
+        query += scope.clause;
         
         if (keyword) {
             query += ` AND (e.first_name LIKE ? OR e.last_name LIKE ?)`;
@@ -278,13 +289,18 @@ exports.search = async (req, res) => {
 // GET PAYROLL STATISTICS (Report)
 exports.getStats = async (req, res) => {
     try {
+        const scope = managerScope(req.user, "e");
         // Total payroll by month
         const [monthlyTotal] = await db.query(
             `SELECT month, year, SUM(net_salary) as total
-             FROM payroll
+             FROM payroll p
+             JOIN employees e ON p.employee_id = e.employee_id
+             WHERE 1=1
+             ${scope.clause}
              GROUP BY year, month
              ORDER BY year DESC, FIELD(month, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December') DESC
-             LIMIT 6`
+             LIMIT 6`,
+            scope.params
         );
         
         // Average salary by department
@@ -293,7 +309,10 @@ exports.getStats = async (req, res) => {
              FROM payroll p
              JOIN employees e ON p.employee_id = e.employee_id
              JOIN departments d ON e.department_id = d.department_id
-             GROUP BY d.department_id`
+             WHERE 1=1
+             ${scope.clause}
+             GROUP BY d.department_id`,
+            scope.params
         );
         
         // Highest paid employees (this month)
@@ -305,15 +324,20 @@ exports.getStats = async (req, res) => {
              FROM payroll p
              JOIN employees e ON p.employee_id = e.employee_id
              WHERE p.month = MONTHNAME(CURDATE()) AND p.year = YEAR(CURDATE())
+             ${scope.clause}
              ORDER BY p.net_salary DESC
-             LIMIT 5`
+             LIMIT 5`,
+            scope.params
         );
         
         // Total payroll this month
         const [thisMonth] = await db.query(
             `SELECT SUM(net_salary) as total
-             FROM payroll
-             WHERE month = MONTHNAME(CURDATE()) AND year = YEAR(CURDATE())`
+             FROM payroll p
+             JOIN employees e ON p.employee_id = e.employee_id
+             WHERE month = MONTHNAME(CURDATE()) AND year = YEAR(CURDATE())
+             ${scope.clause}`,
+            scope.params
         );
         
         res.json({

@@ -1,9 +1,13 @@
 const db = require("../config/db");
-const { getManagerDepartmentId, managerCanAccessEmployee } = require("../utils/departmentAccess");
+const mailer = require("../utils/mailer");
+const { managerScope } = require("../utils/access");
+const { calculateLeaveDays } = require("../utils/workflowRules");
 
 exports.getAll = async (req, res) => {
     try {
-        let query = `SELECT l.*,
+        const scope = managerScope(req.user, "e");
+        const [leaves] = await db.query(
+            `SELECT l.*, 
                     CONCAT(e.first_name, ' ', e.last_name) as employee_name,
                     lt.leave_name,
                     CONCAT(a.first_name, ' ', a.last_name) as approved_by_name
@@ -11,15 +15,11 @@ exports.getAll = async (req, res) => {
              JOIN employees e ON l.employee_id = e.employee_id
              JOIN leave_types lt ON l.leave_type_id = lt.leave_type_id
              LEFT JOIN employees a ON l.approved_by = a.employee_id
-             WHERE 1=1`;
-        const params = [];
-        const departmentId = await getManagerDepartmentId(req.user);
-        if (departmentId !== null) {
-            query += " AND e.department_id = ?";
-            params.push(departmentId);
-        }
-        query += " ORDER BY l.applied_at DESC";
-        const [leaves] = await db.query(query, params);
+             WHERE 1=1
+             ${scope.clause}
+             ORDER BY l.applied_at DESC`,
+            scope.params
+        );
 
         res.json(leaves);
 
@@ -37,21 +37,21 @@ exports.getByEmployee = async (req, res) => {
             (!req.user.employee_id || Number(employeeId) !== Number(req.user.employee_id))) {
             return res.status(403).json({ message: "You can only view your own leave requests" });
         }
-
-        if (req.user.role === "Manager" && !(await managerCanAccessEmployee(req.user, employeeId))) {
-            return res.status(403).json({ message: "You can only view leave requests from your department" });
-        }
+        const scope = managerScope(req.user, "e");
 
         const [leaves] = await db.query(
             `SELECT l.*, 
+                    CONCAT(e.first_name, ' ', e.last_name) as employee_name,
                     lt.leave_name,
                     CONCAT(a.first_name, ' ', a.last_name) as approved_by_name
              FROM leave_requests l
+             JOIN employees e ON l.employee_id = e.employee_id
              JOIN leave_types lt ON l.leave_type_id = lt.leave_type_id
              LEFT JOIN employees a ON l.approved_by = a.employee_id
              WHERE l.employee_id = ?
+             ${scope.clause}
              ORDER BY l.applied_at DESC`,
-            [employeeId]
+            [employeeId, ...scope.params]
         );
 
         res.json(leaves);
@@ -74,16 +74,16 @@ exports.create = async (req, res) => {
             return res.status(403).json({ message: "You can only submit leave for your own employee profile" });
         }
 
-        const start = new Date(start_date);
-        const end = new Date(end_date);
-        const diffTime = Math.abs(end - start);
-        const total_days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        const leaveDays = calculateLeaveDays(start_date, end_date);
+        if (!leaveDays.valid) {
+            return res.status(400).json({ message: leaveDays.message });
+        }
 
         const [result] = await db.query(
             `INSERT INTO leave_requests 
              (employee_id, leave_type_id, start_date, end_date, total_days, reason) 
              VALUES (?, ?, ?, ?, ?, ?)`,
-            [employee_id, leave_type_id, start_date, end_date, total_days, reason || null]
+            [employee_id, leave_type_id, start_date, end_date, leaveDays.totalDays, reason || null]
         );
 
         // Notify the employee's manager and HR/Admin approvers.
@@ -117,9 +117,13 @@ exports.updateStatus = async (req, res) => {
         }
 
         const [existing] = await db.query(
-            `SELECT l.*, e.manager_id
+            `SELECT l.*, e.manager_id,
+                    e.email AS employee_email,
+                    CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+                    lt.leave_name
              FROM leave_requests l
              JOIN employees e ON e.employee_id = l.employee_id
+             JOIN leave_types lt ON lt.leave_type_id = l.leave_type_id
              WHERE l.leave_id = ?`,
             [id]
         );
@@ -145,6 +149,18 @@ exports.updateStatus = async (req, res) => {
              FROM users WHERE employee_id = ?`,
             [status, existing[0].employee_id]
         );
+
+        // Fire-and-forget: email the outcome to the requesting employee.
+        if (existing[0].employee_email) {
+            mailer.sendLeaveStatus({
+                to: existing[0].employee_email,
+                name: existing[0].employee_name,
+                status,
+                leaveName: existing[0].leave_name,
+                startDate: existing[0].start_date,
+                endDate: existing[0].end_date
+            });
+        }
 
         res.json({ message: "Leave request status updated successfully" });
 
@@ -195,6 +211,7 @@ exports.getLeaveTypes = async (req, res) => {
 exports.search = async (req, res) => {
     try {
         const { keyword, status, leave_type, start_date, end_date } = req.query;
+        const scope = managerScope(req.user, "e");
         
         let query = `
             SELECT l.*, 
@@ -208,13 +225,8 @@ exports.search = async (req, res) => {
             WHERE 1=1
         `;
         
-        const params = [];
-
-        const departmentId = await getManagerDepartmentId(req.user);
-        if (departmentId !== null) {
-            query += " AND e.department_id = ?";
-            params.push(departmentId);
-        }
+        const params = [...scope.params];
+        query += scope.clause;
         
         if (keyword) {
             query += ` AND (e.first_name LIKE ? OR e.last_name LIKE ? OR lt.leave_name LIKE ?)`;
@@ -256,38 +268,64 @@ exports.search = async (req, res) => {
 // GET LEAVE STATISTICS (Report)
 exports.getStats = async (req, res) => {
     try {
+        const scope = managerScope(req.user, "e");
         // By status
         const [statusStats] = await db.query(
             `SELECT status, COUNT(*) as count
-             FROM leave_requests
-             GROUP BY status`
+             FROM leave_requests l
+             JOIN employees e ON l.employee_id = e.employee_id
+             WHERE 1=1
+             ${scope.clause}
+             GROUP BY status`,
+            scope.params
         );
         
         // By leave type
-        const [typeStats] = await db.query(
-            `SELECT lt.leave_name, COUNT(l.leave_id) as count
-             FROM leave_types lt
-             LEFT JOIN leave_requests l ON lt.leave_type_id = l.leave_type_id
-             GROUP BY lt.leave_type_id`
-        );
+        const [typeStats] = req.user.role === "Manager"
+            ? await db.query(
+                `SELECT lt.leave_name,
+                        SUM(CASE WHEN e.manager_id = ? THEN 1 ELSE 0 END) as count
+                 FROM leave_types lt
+                 LEFT JOIN leave_requests l ON lt.leave_type_id = l.leave_type_id
+                 LEFT JOIN employees e ON l.employee_id = e.employee_id
+                 GROUP BY lt.leave_type_id`,
+                [req.user.employee_id]
+            )
+            : await db.query(
+                `SELECT lt.leave_name, COUNT(l.leave_id) as count
+                 FROM leave_types lt
+                 LEFT JOIN leave_requests l ON lt.leave_type_id = l.leave_type_id
+                 GROUP BY lt.leave_type_id`
+            );
         
         // Monthly trend (last 6 months)
         const [monthlyTrend] = await db.query(
             `SELECT DATE_FORMAT(applied_at, '%Y-%m') as month, COUNT(*) as count
-             FROM leave_requests
+             FROM leave_requests l
+             JOIN employees e ON l.employee_id = e.employee_id
              WHERE applied_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+             ${scope.clause}
              GROUP BY DATE_FORMAT(applied_at, '%Y-%m')
-             ORDER BY month`
+             ORDER BY month`,
+            scope.params
         );
         
         // Total
         const [total] = await db.query(
-            `SELECT COUNT(*) as total FROM leave_requests`
+            `SELECT COUNT(*) as total FROM leave_requests l
+             JOIN employees e ON l.employee_id = e.employee_id
+             WHERE 1=1
+             ${scope.clause}`,
+            scope.params
         );
         
         // Pending
         const [pending] = await db.query(
-            `SELECT COUNT(*) as pending FROM leave_requests WHERE status = 'Pending'`
+            `SELECT COUNT(*) as pending FROM leave_requests l
+             JOIN employees e ON l.employee_id = e.employee_id
+             WHERE status = 'Pending'
+             ${scope.clause}`,
+            scope.params
         );
         
         res.json({

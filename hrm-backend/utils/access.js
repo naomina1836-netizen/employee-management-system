@@ -24,13 +24,20 @@ function canAccessEmployee(user, targetEmployeeId) {
   }
 
   if (user.role === "Manager") {
-    if (user.employee_id != null && Number(user.employee_id) === Number(targetEmployeeId)) {
-      return true;
-    }
-
-    return true;
+    return user.employee_id != null && Number(user.employee_id) === Number(targetEmployeeId);
   }
   return false;
+}
+
+function managerScope(user, employeeAlias = "e") {
+  if (user?.role !== "Manager") {
+    return { clause: "", params: [] };
+  }
+
+  return {
+    clause: ` AND ${employeeAlias}.manager_id = ?`,
+    params: [user.employee_id],
+  };
 }
 
 
@@ -54,5 +61,6 @@ module.exports = {
   isStaff,
   canAccessEmployee,
   canModifyEmployee,
+  managerScope,
   denyAccess
 };

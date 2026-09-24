@@ -439,6 +439,18 @@ JWT_SECRET=replace_with_a_long_random_secret
 JWT_EXPIRE=7d
 
 CORS_ORIGINS=http://localhost:5173
+
+# Optional email delivery for onboarding, password setup, and leave notifications.
+SMTP_USER=you@gmail.com
+SMTP_PASS=your_16_char_app_password
+MAIL_FROM_NAME=HRM System
+# MAIL_FROM=HRM System <you@gmail.com>
+SMTP_HOST=sandbox.smtp.mailtrap.io
+SMTP_PORT=587
+SMTP_SECURE=false
+FRONTEND_URL=http://localhost:5173
+PASSWORD_SETUP_TOKEN_HOURS=24
+PASSWORD_RESET_TOKEN_HOURS=2
 ```
 
 ### Important
@@ -446,6 +458,10 @@ CORS_ORIGINS=http://localhost:5173
 Do not use the example JWT secret in a real production deployment.
 
 Generate a strong, unique secret before deploying the application.
+
+If `SMTP_USER` and `SMTP_PASS` are not set, the backend keeps running and email sends become no-ops. That is useful for local development, but production should always configure SMTP so password setup links and HR notifications are delivered.
+
+For a cleaner sender line, keep the authenticated SMTP account and the visible `From` address on the same domain. If you only want a display name, set `MAIL_FROM_NAME`. If you need a fully custom sender string, set `MAIL_FROM`.
 
 ---
 
@@ -569,6 +585,19 @@ http://localhost:5173
 ```
 
 Open the displayed URL in your browser.
+
+---
+
+## Test Email Delivery
+
+After configuring SMTP in `hrm-backend/.env`, run a smoke test:
+
+```bash
+cd hrm-backend
+TEST_EMAIL_TO=you@example.com npm run mail:test
+```
+
+The command uses the same Nodemailer settings as user creation, password setup, and leave notifications.
 
 ---
 
@@ -1175,6 +1204,33 @@ CORS_ORIGINS=https://your-frontend-domain.com
 * [ ] Do not commit `.env` files.
 * [ ] Configure production logging.
 * [ ] Monitor application errors.
+* [ ] Configure SPF, DKIM, and DMARC with your mail provider.
+* [ ] Use a transactional SMTP provider in production.
+
+---
+
+# 📧 Production Email Setup
+
+The app already supports generic SMTP through Nodemailer, so setup is mostly environment variables.
+
+## Quick setup
+
+1. Set `SMTP_USER` and `SMTP_PASS` in `hrm-backend/.env`.
+2. Set `MAIL_FROM_NAME` or `MAIL_FROM` if you want a custom sender line.
+3. Optionally set `SMTP_HOST`, `SMTP_PORT`, and `SMTP_SECURE` for a non-Gmail provider.
+4. Set `FRONTEND_URL` so password setup links point at the correct frontend origin.
+5. Run the smoke test with `npm run mail:test`.
+
+```env
+SMTP_USER=noreply@yourcompany.com
+SMTP_PASS=your_provider_password
+MAIL_FROM_NAME=HRM System
+```
+
+## Delivery notes
+
+Keep the authenticated SMTP account and the visible sender aligned. If email is going to spam, check SPF, DKIM, and DMARC in your provider dashboard and DNS.
+Password setup and reset flows now send a one-time link instead of exposing a password in email.
 
 ---
 
@@ -1192,6 +1248,16 @@ CORS_ORIGINS=https://your-frontend-domain.com
 | `JWT_SECRET`   | JWT signing secret       | `your_secret`           |
 | `JWT_EXPIRE`   | JWT expiration time      | `7d`                    |
 | `CORS_ORIGINS` | Allowed frontend origins | `http://localhost:5173` |
+| `SMTP_USER`    | SMTP login username      | `you@gmail.com`         |
+| `SMTP_PASS`    | SMTP login password      | `your_app_password`     |
+| `MAIL_FROM_NAME` | Optional sender display name | `HRM System`       |
+| `MAIL_FROM`    | Optional email sender    | `HRM System <you@gmail.com>` |
+| `SMTP_HOST`    | Optional SMTP host        | `sandbox.smtp.mailtrap.io` |
+| `SMTP_PORT`    | Optional SMTP port        | `587`                   |
+| `SMTP_SECURE`  | Use TLS for SMTP          | `false`                 |
+| `FRONTEND_URL` | Frontend base URL for setup links | `http://localhost:5173` |
+| `PASSWORD_SETUP_TOKEN_HOURS` | Password setup link expiry | `24` |
+| `PASSWORD_RESET_TOKEN_HOURS` | Password reset link expiry | `2` |
 
 ## Frontend
 

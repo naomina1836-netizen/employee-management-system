@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 import {
@@ -125,6 +125,12 @@ function Login() {
                                 {loading ? "Signing in..." : "Sign In"}
                             </button>
                         </form>
+
+                        <div className="auth-actions">
+                            <Link to="/forgot-password" className="auth-link-button">
+                                Forgot your password?
+                            </Link>
+                        </div>
 
                         <div className="form-footer">
                             <p>Secure login with 256-bit encryption</p>

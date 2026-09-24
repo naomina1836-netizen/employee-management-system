@@ -1,8 +1,11 @@
 const db = require("../config/db");
 const bcrypt = require("bcryptjs");
-const { getManagerDepartmentId, managerCanAccessEmployee } = require("../utils/departmentAccess");
+const { managerScope } = require("../utils/access");
 const crypto = require("crypto");
 const { parsePagination, paginatedResponse } = require("../utils/pagination");
+const mailer = require("../utils/mailer");
+const { storePasswordSetupRequest } = require("../utils/passwordSetup");
+const { logAuditEvent } = require("../utils/auditLogger");
 
 async function roleForPosition(connection, positionId) {
     if (!positionId) {
@@ -30,13 +33,11 @@ exports.getAll = async (req, res) => {
              LEFT JOIN departments d ON e.department_id = d.department_id
              LEFT JOIN positions p ON e.position_id = p.position_id
              LEFT JOIN employees m ON e.manager_id = m.employee_id
-             LEFT JOIN users u ON u.employee_id = e.employee_id`;
-        const params = [];
-        const departmentId = await getManagerDepartmentId(req.user);
-        if (departmentId !== null) {
-            query += " WHERE e.department_id = ?";
-            params.push(departmentId);
-        }
+             LEFT JOIN users u ON u.employee_id = e.employee_id
+             WHERE 1=1`;
+        const scope = managerScope(req.user, "e");
+        query += scope.clause;
+        const params = [...scope.params];
 
         // Pagination is opt-in: callers that omit page/limit still receive the full list.
         const wantsPagination = req.query.page !== undefined || req.query.limit !== undefined;
@@ -49,10 +50,10 @@ exports.getAll = async (req, res) => {
         // limit/offset are validated integers from parsePagination, safe to inline.
         const { limit, offset, page } = parsePagination(req.query);
 
-        const countQuery = departmentId !== null
-            ? "SELECT COUNT(*) AS total FROM employees WHERE department_id = ?"
-            : "SELECT COUNT(*) AS total FROM employees";
-        const [countRows] = await db.query(countQuery, params);
+        const [countRows] = await db.query(
+            `SELECT COUNT(*) AS total FROM employees e WHERE 1=1 ${scope.clause}`,
+            scope.params
+        );
         const [employees] = await db.query(
             `${query} ORDER BY e.employee_id DESC LIMIT ${limit} OFFSET ${offset}`,
             params
@@ -69,6 +70,7 @@ exports.getAll = async (req, res) => {
 exports.getOne = async (req, res) => {
     try {
         const { id } = req.params;
+        const scope = managerScope(req.user, "e");
 
         const [employees] = await db.query(
             `SELECT e.*, 
@@ -81,16 +83,13 @@ exports.getOne = async (req, res) => {
              LEFT JOIN positions p ON e.position_id = p.position_id
              LEFT JOIN employees m ON e.manager_id = m.employee_id
              LEFT JOIN users u ON u.employee_id = e.employee_id
-             WHERE e.employee_id = ?`,
-            [id]
+             WHERE e.employee_id = ?
+             ${scope.clause}`,
+            [id, ...scope.params]
         );
 
         if (employees.length === 0) {
             return res.status(404).json({ message: "Employee not found" });
-        }
-
-        if (req.user.role === "Manager" && !(await managerCanAccessEmployee(req.user, id))) {
-            return res.status(403).json({ message: "You can only view employees in your department" });
         }
 
         res.json(employees[0]);
@@ -158,15 +157,24 @@ exports.create = async (req, res) => {
             ]
         );
 
-        await connection.query(
-            `INSERT INTO audit_logs (user_id, action, table_name, record_id) 
-             VALUES (?, 'INSERT', 'employees', ?)`,
-            [req.user.user_id, result.insertId]
-        );
+        await logAuditEvent(connection, {
+            userId: req.user.user_id,
+            action: "CREATE",
+            tableName: "employees",
+            recordId: result.insertId,
+            details: {
+                first_name,
+                last_name,
+                email,
+                department_id: department_id || null,
+                position_id: position_id || null,
+            },
+        });
 
         let accountCreated = false;
         let accountLinked = false;
-        let tempPassword = null;
+        let newLogin = null;
+        let setupUrl = null;
 
         if (existingUsers.length > 0) {
             await connection.query(
@@ -178,9 +186,6 @@ exports.create = async (req, res) => {
             );
             accountLinked = true;
         } else {
-            // Prefer the admin-supplied password; otherwise fall back to a
-            // configured default or a random temporary one.
-            const adminSetPassword = Boolean(password);
             const loginPassword = password || process.env.DEFAULT_EMPLOYEE_PASSWORD || crypto.randomBytes(9).toString("base64url");
             const passwordHash = await bcrypt.hash(loginPassword, 10);
             const username = `employee${result.insertId}`;
@@ -191,13 +196,24 @@ exports.create = async (req, res) => {
                 [username, email, passwordHash, accountRole, result.insertId]
             );
             accountCreated = true;
-            // Only reveal the password when we generated it; admin-set ones are already known.
-            if (!adminSetPassword) {
-                tempPassword = loginPassword;
-            }
+            newLogin = { email, username };
+            const setupRequest = await storePasswordSetupRequest(connection, result.insertId);
+            setupUrl = setupRequest.setupUrl;
         }
 
         await connection.commit();
+
+        let emailSent = false;
+        if (newLogin) {
+            // Email the setup link after commit so a mail hiccup never rolls back the employee record.
+            emailSent = await mailer.sendPasswordSetupLink({
+                to: newLogin.email,
+                name: `${first_name} ${last_name}`,
+                username: newLogin.username,
+                setupUrl,
+                role: accountRole
+            });
+        }
 
         res.status(201).json({
             message: accountCreated
@@ -206,7 +222,8 @@ exports.create = async (req, res) => {
             employee_id: result.insertId,
             account_created: accountCreated,
             account_linked: accountLinked,
-            temp_password: tempPassword
+            email_to: newLogin ? newLogin.email : null,
+            email_sent: emailSent
         });
 
     } catch (error) {
@@ -279,11 +296,18 @@ exports.update = async (req, res) => {
             [email, accountRole, id]
         );
 
-        await db.query(
-            `INSERT INTO audit_logs (user_id, action, table_name, record_id) 
-             VALUES (?, 'UPDATE', 'employees', ?)`,
-            [req.user.user_id, id]
-        );
+        await logAuditEvent(db, {
+            userId: req.user.user_id,
+            action: "UPDATE",
+            tableName: "employees",
+            recordId: Number(id),
+            details: {
+                first_name,
+                last_name,
+                email,
+                employment_status: employment_status || "Active",
+            },
+        });
 
         res.json({ message: "Employee updated successfully" });
 
@@ -311,11 +335,12 @@ exports.delete = async (req, res) => {
             [id]
         );
 
-        await db.query(
-            `INSERT INTO audit_logs (user_id, action, table_name, record_id) 
-             VALUES (?, 'DELETE', 'employees', ?)`,
-            [req.user.user_id, id]
-        );
+        await logAuditEvent(db, {
+            userId: req.user.user_id,
+            action: "DELETE",
+            tableName: "employees",
+            recordId: Number(id),
+        });
 
         res.json({ message: "Employee deleted successfully" });
 
@@ -372,13 +397,9 @@ exports.search = async (req, res) => {
             WHERE 1=1
         `;
         
-        const params = [];
-
-        const departmentId = await getManagerDepartmentId(req.user);
-        if (departmentId !== null) {
-            query += " AND e.department_id = ?";
-            params.push(departmentId);
-        }
+        const scope = managerScope(req.user, "e");
+        const params = [...scope.params];
+        query += scope.clause;
         
         if (keyword) {
             query += ` AND (e.first_name LIKE ? OR e.last_name LIKE ? OR e.email LIKE ? OR e.phone LIKE ?)`;
@@ -415,31 +436,40 @@ exports.search = async (req, res) => {
 // GET EMPLOYEE STATISTICS (Report)
 exports.getStats = async (req, res) => {
     try {
+        const scope = managerScope(req.user, "e");
         // Total by department
         const [deptStats] = await db.query(
             `SELECT d.department_name, COUNT(e.employee_id) as count
              FROM departments d
-             LEFT JOIN employees e ON d.department_id = e.department_id AND e.employment_status = 'Active'
-             GROUP BY d.department_id`
+             LEFT JOIN employees e ON d.department_id = e.department_id
+                 AND e.employment_status = 'Active'
+                 ${scope.clause}
+             GROUP BY d.department_id`,
+            scope.params
         );
         
         // Total by status
         const [statusStats] = await db.query(
-            `SELECT employment_status, COUNT(*) as count
-             FROM employees
-             GROUP BY employment_status`
+            `SELECT e.employment_status, COUNT(*) as count
+             FROM employees e
+             WHERE 1=1 ${scope.clause}
+             GROUP BY e.employment_status`,
+            scope.params
         );
         
         // Total by gender
         const [genderStats] = await db.query(
-            `SELECT gender, COUNT(*) as count
-             FROM employees
-             GROUP BY gender`
+            `SELECT e.gender, COUNT(*) as count
+             FROM employees e
+             WHERE 1=1 ${scope.clause}
+             GROUP BY e.gender`,
+            scope.params
         );
         
         // Total employees
         const [total] = await db.query(
-            `SELECT COUNT(*) as total FROM employees`
+            `SELECT COUNT(*) as total FROM employees e WHERE 1=1 ${scope.clause}`,
+            scope.params
         );
         
         // Recent hires (last 30 days)
@@ -449,7 +479,9 @@ exports.getStats = async (req, res) => {
              LEFT JOIN departments d ON e.department_id = d.department_id
              LEFT JOIN positions p ON e.position_id = p.position_id
              WHERE e.hire_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-             ORDER BY e.hire_date DESC`
+             ${scope.clause}
+             ORDER BY e.hire_date DESC`,
+            scope.params
         );
         
         res.json({

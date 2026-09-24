@@ -1,4 +1,5 @@
 const db = require("../config/db");
+const { logAuditEvent } = require("../utils/auditLogger");
 
 // === DEPARTMENTS ===
 exports.getDepartments = async (req, res) => {
@@ -26,11 +27,16 @@ exports.createDepartment = async (req, res) => {
             [department_name, description || null]
         );
 
-        await db.query(
-            `INSERT INTO audit_logs (user_id, action, table_name, record_id) 
-             VALUES (?, 'INSERT', 'departments', ?)`,
-            [req.user.user_id, result.insertId]
-        );
+        await logAuditEvent(db, {
+            userId: req.user.user_id,
+            action: "CREATE",
+            tableName: "departments",
+            recordId: result.insertId,
+            details: {
+                department_name,
+                description: description || null,
+            },
+        });
 
         res.status(201).json({
             message: "Department created successfully",
@@ -52,11 +58,16 @@ exports.updateDepartment = async (req, res) => {
             [department_name, description, id]
         );
 
-        await db.query(
-            `INSERT INTO audit_logs (user_id, action, table_name, record_id) 
-             VALUES (?, 'UPDATE', 'departments', ?)`,
-            [req.user.user_id, id]
-        );
+        await logAuditEvent(db, {
+            userId: req.user.user_id,
+            action: "UPDATE",
+            tableName: "departments",
+            recordId: Number(id),
+            details: {
+                department_name,
+                description: description || null,
+            },
+        });
 
         res.json({ message: "Department updated successfully" });
     } catch (error) {
@@ -74,11 +85,12 @@ exports.deleteDepartment = async (req, res) => {
             [id]
         );
 
-        await db.query(
-            `INSERT INTO audit_logs (user_id, action, table_name, record_id) 
-             VALUES (?, 'DELETE', 'departments', ?)`,
-            [req.user.user_id, id]
-        );
+        await logAuditEvent(db, {
+            userId: req.user.user_id,
+            action: "DELETE",
+            tableName: "departments",
+            recordId: Number(id),
+        });
 
         res.json({ message: "Department deleted successfully" });
     } catch (error) {
@@ -116,11 +128,17 @@ exports.createPosition = async (req, res) => {
             [title, basic_salary || 0, department_id || null]
         );
 
-        await db.query(
-            `INSERT INTO audit_logs (user_id, action, table_name, record_id) 
-             VALUES (?, 'INSERT', 'positions', ?)`,
-            [req.user.user_id, result.insertId]
-        );
+        await logAuditEvent(db, {
+            userId: req.user.user_id,
+            action: "CREATE",
+            tableName: "positions",
+            recordId: result.insertId,
+            details: {
+                title,
+                basic_salary: basic_salary || 0,
+                department_id: department_id || null,
+            },
+        });
 
         res.status(201).json({
             message: "Position created successfully",
@@ -142,11 +160,17 @@ exports.updatePosition = async (req, res) => {
             [title, basic_salary, department_id, id]
         );
 
-        await db.query(
-            `INSERT INTO audit_logs (user_id, action, table_name, record_id) 
-             VALUES (?, 'UPDATE', 'positions', ?)`,
-            [req.user.user_id, id]
-        );
+        await logAuditEvent(db, {
+            userId: req.user.user_id,
+            action: "UPDATE",
+            tableName: "positions",
+            recordId: Number(id),
+            details: {
+                title,
+                basic_salary,
+                department_id: department_id || null,
+            },
+        });
 
         res.json({ message: "Position updated successfully" });
     } catch (error) {
@@ -164,11 +188,12 @@ exports.deletePosition = async (req, res) => {
             [id]
         );
 
-        await db.query(
-            `INSERT INTO audit_logs (user_id, action, table_name, record_id) 
-             VALUES (?, 'DELETE', 'positions', ?)`,
-            [req.user.user_id, id]
-        );
+        await logAuditEvent(db, {
+            userId: req.user.user_id,
+            action: "DELETE",
+            tableName: "positions",
+            recordId: Number(id),
+        });
 
         res.json({ message: "Position deleted successfully" });
     } catch (error) {
