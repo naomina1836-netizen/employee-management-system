@@ -31,6 +31,7 @@ import Notifications from "./pages/Notifications";
 import Reports from "./pages/Reports";
 import AdminUsers from "./pages/AdminUsers";
 import AdminAuditLogs from "./pages/AdminAuditLogs";
+import Settings from "./pages/Settings";
 
 function App() {
     const { user, loading } = useAuth();
@@ -86,6 +87,7 @@ function App() {
                 <Route path="performance/edit/:id" element={canManagePerformance ? <EditPerformance /> : <Navigate to="/performance" replace />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="reports" element={<Reports />} />
+                <Route path="settings" element={isAdminOrHR ? <Settings /> : <Navigate to="/dashboard" replace />} />
                 {user.role === "Admin" && <Route path="admin/users" element={<AdminUsers />} />}
                 {user.role === "Admin" && <Route path="admin/audit-logs" element={<AdminAuditLogs />} />}
                 {user.role !== "Admin" && <Route path="admin/users" element={<Navigate to="/dashboard" replace />} />}

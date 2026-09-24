@@ -137,6 +137,14 @@ body {
     filter: saturate(0.98) contrast(1.03);
 }
 
+.route-settings::before {
+    background-image: url("https://res.cloudinary.com/nqb1tl4u/image/upload/v1786971025/reports-bg.jpg");
+    background-position: center center;
+    background-size: cover;
+    opacity: 1;
+    filter: saturate(0.98) contrast(1.03);
+}
+
 .route-create::before,
 .route-edit::before {
     background-image: url("../assets/page-art/forms.svg");
@@ -2178,6 +2186,23 @@ body {
 .page-header .btn-primary,
 .page-header .btn-secondary {
     min-height: 42px;
+}
+
+.tabs-header .btn-primary {
+    background: #d4af37;
+    color: #1a1a2e;
+    opacity: 1;
+}
+
+.tabs-header .btn-secondary {
+    background: rgba(26, 26, 46, 0.55);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    opacity: 1;
+}
+
+.tabs-header .btn-secondary:hover {
+    background: rgba(26, 26, 46, 0.72);
 }
 
 .table-container,
