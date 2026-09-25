@@ -182,6 +182,25 @@ async function syncSchemaMigrations(connection) {
   }
 }
 
+async function syncEmployeeRoles(connection) {
+  const [result] = await connection.query(
+    `
+    UPDATE users u
+    JOIN employees e ON e.employee_id = u.employee_id
+    JOIN positions p ON p.position_id = e.position_id
+    SET u.role = CASE
+      WHEN LOWER(p.title) LIKE '%manager%' THEN 'Manager'
+      ELSE 'Employee'
+    END
+    WHERE u.role IN ('Employee', 'Manager')
+    `
+  );
+
+  if (result.affectedRows > 0) {
+    console.log(`Synchronized roles for ${result.affectedRows} employee account(s).`);
+  }
+}
+
 async function seedDefaultAdmin(connection) {
   try {
     await connection.query(`USE \`${DB_NAME}\``);
@@ -278,6 +297,7 @@ async function ensureDatabaseSchema() {
 
       // Run only migrations needed for an existing database.
       await syncSchemaMigrations(connection);
+      await syncEmployeeRoles(connection);
     }
 
     const seededAdmin = await seedDefaultAdmin(connection);

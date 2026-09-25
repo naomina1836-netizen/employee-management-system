@@ -41,7 +41,7 @@ function Sidebar() {
         { path: "/payroll", label: "Payroll", icon: Wallet },
         { path: "/performance", label: "Performance", icon: Star },
         { path: "/notifications", label: "Notifications", icon: Bell },
-        { path: "/reports", label: "Reports", icon: BarChart3 },
+        { path: "/reports", label: "Reports", icon: BarChart3, roles: ["Admin", "HR"] },
         { path: "/settings", label: "Settings", icon: SettingsIcon, roles: ["Admin", "HR"] },
         { path: "/admin/users", label: "User Management", icon: UserCog, roles: ["Admin"] },
         { path: "/admin/audit-logs", label: "Audit Logs", icon: ClipboardList, roles: ["Admin"] },

@@ -508,17 +508,19 @@ USE hrm_db;
 
 ### Step 4 — Import the schema
 
-From the project root, import:
+The canonical schema is:
 
 ```text
-database/schema.sql
+hrm-backend/database/schema.sql
 ```
 
 For example:
 
 ```bash
-mysql -u root -p hrm_db < database/schema.sql
+mysql -u root -p hrm_db < hrm-backend/database/schema.sql
 ```
+
+The backend bootstrap loads this same file automatically. `database/schema.sql` is a synchronized convenience copy for database tooling; do not treat it as an independent schema definition.
 
 ---
 
@@ -766,10 +768,22 @@ Major API areas include:
 /api/admin
 /api/settings
 /api/notifications
-/api/reports
 ```
 
 The exact endpoints may change as development continues.
+
+## Reports
+
+Reports are assembled in the frontend from these implemented statistics endpoints:
+
+```text
+GET /api/employees/stats
+GET /api/leaves/stats
+GET /api/payroll/stats
+GET /api/performance/stats
+```
+
+There is no generic `/api/reports` endpoint.
 
 ---
 
@@ -1081,7 +1095,7 @@ CREATE DATABASE hrm_db;
 Then import:
 
 ```text
-database/schema.sql
+hrm-backend/database/schema.sql
 ```
 
 ---
@@ -1327,7 +1341,7 @@ This repository includes GitHub Actions workflows for continuous integration and
 | Workflow | File | Triggers | What it does |
 | --- | --- | --- | --- |
 | **CI** | `.github/workflows/ci.yml` | Push & pull requests to `main` / `master` / `develop` | Installs deps, runs backend Jest tests, builds the Vite frontend, uploads `dist` artifact |
-| **CD** | `.github/workflows/cd.yml` | Push to `main` / `master`, or manual **workflow_dispatch** | Re-verifies tests + build, uploads a SHA-tagged frontend artifact, then runs a staging deploy job (placeholder until you wire a host) |
+| **CD** | `.github/workflows/cd.yml` | Push to `main` / `master`, or manual **workflow_dispatch** | Re-verifies tests and build, deploys the frontend artifact to GitHub Pages, and optionally triggers a Render backend deploy hook |
 
 ## What runs in CI
 
@@ -1347,9 +1361,9 @@ In GitHub → **Settings → Branches → Branch protection rules** for `main`:
 - Require status checks to pass: **CI success**
 - (Optional) Require branches to be up to date
 
-## Wiring real deploys (CD)
+## Deployment behavior (CD)
 
-The CD workflow currently stops at a **Deploy (staging)** placeholder so the pipeline is safe by default. Choose a host and add the matching step:
+The CD workflow deploys the frontend to GitHub Pages after verification. It deploys the backend only when the `RENDER_DEPLOY_HOOK` repository secret is configured; otherwise the backend deploy step is intentionally skipped. For a different backend host, replace or extend that optional hook step.
 
 | Target | Typical approach | Secrets / vars to add |
 | --- | --- | --- |

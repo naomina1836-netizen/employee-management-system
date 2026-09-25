@@ -15,6 +15,8 @@ const DEV_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://127.0.0.1:5175",
     "http://127.0.0.1:3000",
+    "http://localhost:5176",
+    "http://127.0.0.1:5176",
 ];
 
 // Allow overriding origins via CORS_ORIGINS (comma-separated); fall back to dev list.

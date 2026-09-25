@@ -5,7 +5,7 @@ const authorize = require("../middleware/roleMiddleware");
 const attendanceController = require("../controllers/attendanceController");
 
 router.get("/search", authenticate, authorize("Admin", "HR", "Manager"), attendanceController.search);
-router.get("/stats", authenticate, authorize("Admin", "HR", "Manager"), attendanceController.getStats);
+router.get("/stats", authenticate, authorize("Admin", "HR"), attendanceController.getStats);
 router.get("/today", authenticate, attendanceController.getToday);
 router.post("/self/check-in", authenticate, attendanceController.selfCheckIn);
 router.post("/self/check-out", authenticate, attendanceController.selfCheckOut);

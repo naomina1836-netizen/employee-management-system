@@ -6,7 +6,7 @@ const leaveController = require("../controllers/leaveController");
 const { validateLeave } = require("../middleware/validators");
 
 router.get("/search", authenticate, authorize("Admin", "HR", "Manager"), leaveController.search);
-router.get("/stats", authenticate, authorize("Admin", "HR", "Manager"), leaveController.getStats);
+router.get("/stats", authenticate, authorize("Admin", "HR"), leaveController.getStats);
 router.get("/types", authenticate, leaveController.getLeaveTypes);
 router.get("/employee/:employeeId", authenticate, leaveController.getByEmployee);
 router.get("/", authenticate, authorize("Admin", "HR", "Manager"), leaveController.getAll);

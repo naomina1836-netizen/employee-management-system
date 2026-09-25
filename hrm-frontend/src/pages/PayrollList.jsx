@@ -16,11 +16,13 @@ function PayrollList() {
 
     async function loadPayroll() {
         try {
-            if (user?.role === "Employee" && !user.employee_id) {
+            if (["Employee", "Manager"].includes(user?.role) && !user.employee_id) {
                 setPayroll([]);
                 return;
             }
-            const endpoint = user?.role === "Employee" ? `/payroll/employee/${user.employee_id}` : "/payroll";
+            const endpoint = ["Employee", "Manager"].includes(user?.role)
+                ? `/payroll/employee/${user.employee_id}`
+                : "/payroll";
             const response = await api.get(endpoint);
             setPayroll(response.data);
         } catch (error) {
@@ -76,7 +78,7 @@ function PayrollList() {
                                     <td>ETB {parseFloat(p.allowance).toLocaleString()}</td>
                                     <td><strong>ETB {parseFloat(p.net_salary).toLocaleString()}</strong></td>
                                     <td>
-                                        {user?.role !== "Employee" && <Link to={`/payroll/${p.payroll_id}`} className="btn-sm">View</Link>}
+                                        {canManage && <Link to={`/payroll/${p.payroll_id}`} className="btn-sm">View</Link>}
                                         {canManage && <Link to={`/payroll/edit/${p.payroll_id}`} className="btn-sm btn-edit">Edit</Link>}
                                     </td>
                                 </tr>
